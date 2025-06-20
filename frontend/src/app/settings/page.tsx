@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import Link from "next/link"
+import { AuthGuard } from "@/components/auth-guard"
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState({
@@ -67,7 +68,8 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <AuthGuard>
+      <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b">
         <div className="max-w-4xl mx-auto px-6 py-4">
@@ -512,6 +514,7 @@ export default function SettingsPage() {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+      </div>
+      </AuthGuard>
   )
 }

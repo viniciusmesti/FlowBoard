@@ -36,6 +36,10 @@ export class Task {
   @JoinColumn()
   owner: User;
 
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn()
+  assignee?: User;
+
   @Column({ type: 'date', nullable: true })
   startDate?: Date;
 

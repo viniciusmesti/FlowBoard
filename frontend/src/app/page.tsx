@@ -12,7 +12,11 @@ import {
   Play,
   LayoutTemplateIcon as Template,
   GitBranch,
+  Settings,
+  Trash2,
+  Edit,
 } from "lucide-react"
+import { AuthGuard } from "@/components/auth-guard"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -32,9 +36,9 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { useScrumBoard } from "@/hooks/useScrumBoard"
+import { useScrumBoardContext } from "@/contexts/ScrumBoardContext"
 import { DashboardStats } from "@/components/dashboard-stats"
-import type { Requirement } from "@/types"
+import type { Requirement, RequirementTemplate } from "@/types"
 import Link from "next/link"
 import { RequirementActivationModal } from "@/components/requirement-activation-modal"
 import { RequirementTemplatesModal } from "@/components/requirement-templates-modal"
@@ -42,6 +46,14 @@ import { CreateTemplateModal } from "@/components/create-template-modal"
 import { WeeklyReportModal } from "@/components/weekly-report-modal"
 import { GlobalSearchModal } from "@/components/global-search-modal"
 import { NotificationCenter } from "@/components/notification-center"
+import { useAuth } from "@/contexts/AuthContext"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 const colors = [
   "bg-blue-500",
@@ -64,7 +76,8 @@ export default function Dashboard() {
     addRequirement,
     updateRequirement,
     deleteRequirement,
-  } = useScrumBoard()
+  } = useScrumBoardContext()
+  const { user: loggedUser } = useAuth()
 
   const [isRequirementDialogOpen, setIsRequirementDialogOpen] = useState(false)
   const [newRequirement, setNewRequirement] = useState({
@@ -74,12 +87,14 @@ export default function Dashboard() {
     priority: "medium" as const,
   })
 
+  const [selectedRequirementForActivation, setSelectedRequirementForActivation] = useState<Requirement | null>(null)
   const [isActivationModalOpen, setIsActivationModalOpen] = useState(false)
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false)
   const [isCreateTemplateModalOpen, setIsCreateTemplateModalOpen] = useState(false)
   const [isWeeklyReportModalOpen, setIsWeeklyReportModalOpen] = useState(false)
-  const [selectedRequirementForActivation, setSelectedRequirementForActivation] = useState<Requirement | null>(null)
   const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false)
+  const [requirementToDelete, setRequirementToDelete] = useState<Requirement | null>(null)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
   const activeRequirements = requirements.filter((req) => req.status !== "completed")
   const completedRequirements = requirements.filter((req) => req.status === "completed")
@@ -93,6 +108,12 @@ export default function Dashboard() {
       return
     }
 
+    if (!loggedUser) {
+      console.log("No logged user, not creating requirement") // Debug log
+      alert("Usuário não está logado")
+      return
+    }
+
     try {
       const requirementData = {
         title: newRequirement.title,
@@ -100,7 +121,7 @@ export default function Dashboard() {
         color: newRequirement.color,
         status: "planning" as const,
         priority: newRequirement.priority,
-        owner: users[0],
+        owner: loggedUser!,
         progress: 0,
         tasks: [],
         milestones: [],
@@ -154,19 +175,6 @@ export default function Dashboard() {
     }
   }
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "high":
-        return "bg-red-100 text-red-800"
-      case "medium":
-        return "bg-yellow-100 text-yellow-800"
-      case "low":
-        return "bg-green-100 text-green-800"
-      default:
-        return "bg-gray-100 text-gray-800"
-    }
-  }
-
   const handleActivateRequirement = (requirementId: string, data: any) => {
     updateRequirement(requirementId, data)
     setSelectedRequirementForActivation(null)
@@ -177,14 +185,32 @@ export default function Dashboard() {
     setSelectedRequirementForActivation(null)
   }
 
+  const handleDeleteRequirement = (requirement: Requirement) => {
+    setRequirementToDelete(requirement)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const confirmDeleteRequirement = () => {
+    if (requirementToDelete) {
+      deleteRequirement(requirementToDelete.id)
+      setRequirementToDelete(null)
+      setIsDeleteDialogOpen(false)
+    }
+  }
+
   const handleCreateFromTemplate = (template: any) => {
+    if (!loggedUser) {
+      alert("Usuário não está logado")
+      return
+    }
+
     const requirement = {
       title: `${template.name} - ${new Date().toLocaleDateString()}`,
       description: template.description,
       color: template.color,
       status: "planning" as const,
       priority: template.priority,
-      owner: users[0],
+      owner: loggedUser!,
       progress: 0,
       tasks: template.defaultTasks.map((task: any) => ({
         ...task,
@@ -349,301 +375,368 @@ export default function Dashboard() {
               )}
             </div>
           )}
+
+          {/* Dropdown Menu */}
+          <div className="absolute top-2 right-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild onClick={(e) => e.preventDefault()}>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {canActivate && (
+                  <DropdownMenuItem onClick={(e) => {
+                    e.preventDefault()
+                    setSelectedRequirementForActivation(requirement)
+                    setIsActivationModalOpen(true)
+                  }}>
+                    <Play className="mr-2 h-4 w-4" />
+                    Ativar
+                  </DropdownMenuItem>
+                )}
+                {requirement.status === "planning" && (
+                  <DropdownMenuItem onClick={(e) => {
+                    e.preventDefault()
+                    setSelectedRequirementForActivation(requirement)
+                    setIsActivationModalOpen(true)
+                  }}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Solicitar Aprovação
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={(e) => {
+                    e.preventDefault()
+                    handleDeleteRequirement(requirement)
+                  }}
+                  className="text-red-600"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Excluir
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </CardContent>
       </Card>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Dashboard do Projeto</h1>
-              <p className="text-gray-600 mt-1">Visão geral dos seus requisitos e progresso</p>
-            </div>
+    <AuthGuard>
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <div className="bg-white border-b">
+          <div className="max-w-7xl mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Dashboard do Projeto</h1>
+                <p className="text-gray-600 mt-1">Visão geral dos seus requisitos e progresso</p>
+              </div>
 
-            <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm" onClick={() => setIsGlobalSearchOpen(true)}>
-                <Search className="w-4 h-4 mr-2" />
-                Buscar
-              </Button>
-
-              <NotificationCenter />
-
-              <Button variant="outline" size="sm" onClick={() => setIsTemplatesModalOpen(true)}>
-                <Template className="w-4 h-4 mr-2" />
-                Templates
-              </Button>
-
-              <Link href="/archived">
-                <Button variant="outline" size="sm">
-                  <Archive className="w-4 h-4 mr-2" />
-                  Arquivados ({completedRequirements.length})
+              <div className="flex items-center gap-3">
+                <Button variant="outline" size="sm" onClick={() => setIsGlobalSearchOpen(true)}>
+                  <Search className="w-4 h-4 mr-2" />
+                  Buscar
                 </Button>
-              </Link>
 
-              <Dialog open={isRequirementDialogOpen} onOpenChange={setIsRequirementDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Novo Requisito
+                <NotificationCenter />
+
+                <Button variant="outline" size="sm" onClick={() => setIsTemplatesModalOpen(true)}>
+                  <Template className="w-4 h-4 mr-2" />
+                  Templates
+                </Button>
+
+                <Link href="/archived">
+                  <Button variant="outline" size="sm">
+                    <Archive className="w-4 h-4 mr-2" />
+                    Arquivados ({completedRequirements.length})
                   </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Criar Novo Requisito</DialogTitle>
-                    <DialogDescription>Adicione um novo requisito principal ao seu projeto</DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="title">Título *</Label>
-                      <Input
-                        id="title"
-                        value={newRequirement.title}
-                        onChange={(e) => {
-                          console.log("Title changed:", e.target.value) // Debug log
-                          setNewRequirement({ ...newRequirement, title: e.target.value })
-                        }}
-                        placeholder="Ex: Sistema de Autenticação"
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="description">Descrição</Label>
-                      <Textarea
-                        id="description"
-                        value={newRequirement.description}
-                        onChange={(e) => setNewRequirement({ ...newRequirement, description: e.target.value })}
-                        placeholder="Descreva o requisito em detalhes..."
-                        rows={3}
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
+                </Link>
+
+                <Dialog open={isRequirementDialogOpen} onOpenChange={setIsRequirementDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Novo Requisito
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Criar Novo Requisito</DialogTitle>
+                      <DialogDescription>Adicione um novo requisito principal ao seu projeto</DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
                       <div className="grid gap-2">
-                        <Label>Prioridade</Label>
-                        <Select
-                          value={newRequirement.priority}
-                          onValueChange={(value: any) => setNewRequirement({ ...newRequirement, priority: value })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="low">Baixa</SelectItem>
-                            <SelectItem value="medium">Média</SelectItem>
-                            <SelectItem value="high">Alta</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <Label htmlFor="title">Título *</Label>
+                        <Input
+                          id="title"
+                          value={newRequirement.title}
+                          onChange={(e) => {
+                            console.log("Title changed:", e.target.value) // Debug log
+                            setNewRequirement({ ...newRequirement, title: e.target.value })
+                          }}
+                          placeholder="Ex: Sistema de Autenticação"
+                        />
                       </div>
                       <div className="grid gap-2">
-                        <Label>Cor</Label>
-                        <div className="flex gap-1 flex-wrap">
-                          {colors.map((color) => (
-                            <button
-                              key={color}
-                              className={`w-6 h-6 rounded-full ${color} ${
-                                newRequirement.color === color ? "ring-2 ring-gray-400" : ""
-                              }`}
-                              onClick={() => setNewRequirement({ ...newRequirement, color })}
-                            />
-                          ))}
+                        <Label htmlFor="description">Descrição</Label>
+                        <Textarea
+                          id="description"
+                          value={newRequirement.description}
+                          onChange={(e) => setNewRequirement({ ...newRequirement, description: e.target.value })}
+                          placeholder="Descreva o requisito em detalhes..."
+                          rows={3}
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="grid gap-2">
+                          <Label>Prioridade</Label>
+                          <Select
+                            value={newRequirement.priority}
+                            onValueChange={(value: any) => setNewRequirement({ ...newRequirement, priority: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="low">Baixa</SelectItem>
+                              <SelectItem value="medium">Média</SelectItem>
+                              <SelectItem value="high">Alta</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid gap-2">
+                          <Label>Cor</Label>
+                          <div className="flex gap-1 flex-wrap">
+                            {colors.map((color) => (
+                              <button
+                                key={color}
+                                className={`w-6 h-6 rounded-full ${color} ${
+                                  newRequirement.color === color ? "ring-2 ring-gray-400" : ""
+                                }`}
+                                onClick={() => setNewRequirement({ ...newRequirement, color })}
+                              />
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setIsRequirementDialogOpen(false)}>
-                      Cancelar
-                    </Button>
-                    <Button onClick={handleAddRequirement}>Criar Requisito</Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setIsRequirementDialogOpen(false)}>
+                        Cancelar
+                      </Button>
+                      <Button onClick={handleAddRequirement}>Criar Requisito</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-6">
-        {/* Dashboard Stats */}
-        <DashboardStats stats={projectStats} />
+        <div className="max-w-7xl mx-auto px-6 py-6">
+          {/* Dashboard Stats */}
+          <DashboardStats stats={projectStats} />
 
-        {/* Filters */}
-        <div className="flex items-center gap-4 mb-6 p-4 bg-white rounded-lg shadow-sm">
-          <div className="flex items-center gap-2 flex-1">
-            <Search className="w-4 h-4 text-gray-400" />
-            <Input
-              placeholder="Buscar requisitos..."
-              value={filters.search}
-              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-              className="border-0 shadow-none"
-            />
+          {/* Filters */}
+          <div className="flex items-center gap-4 mb-6 p-4 bg-white rounded-lg shadow-sm">
+            <div className="flex items-center gap-2 flex-1">
+              <Search className="w-4 h-4 text-gray-400" />
+              <Input
+                placeholder="Buscar requisitos..."
+                value={filters.search}
+                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                className="border-0 shadow-none"
+              />
+            </div>
+
+            <Select value={filters.status} onValueChange={(value) => setFilters({ ...filters, status: value })}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="planning">Planejamento</SelectItem>
+                <SelectItem value="active">Ativo</SelectItem>
+                <SelectItem value="on-hold">Em Espera</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={filters.priority} onValueChange={(value) => setFilters({ ...filters, priority: value })}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Prioridade" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                <SelectItem value="low">Baixa</SelectItem>
+                <SelectItem value="medium">Média</SelectItem>
+                <SelectItem value="high">Alta</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Button variant="outline" size="sm">
+              <Filter className="w-4 h-4 mr-2" />
+              Mais Filtros
+            </Button>
           </div>
 
-          <Select value={filters.status} onValueChange={(value) => setFilters({ ...filters, status: value })}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="planning">Planejamento</SelectItem>
-              <SelectItem value="active">Ativo</SelectItem>
-              <SelectItem value="on-hold">Em Espera</SelectItem>
-            </SelectContent>
-          </Select>
+          {/* Requirements Grid */}
+          <Tabs defaultValue="active" className="w-full">
+            <TabsList className="mb-6">
+              <TabsTrigger value="active" className="flex items-center gap-2">
+                Requisitos Ativos ({activeRequirements.length})
+              </TabsTrigger>
+              <TabsTrigger value="planning" className="flex items-center gap-2">
+                Em Planejamento ({requirements.filter((r) => r.status === "planning").length})
+              </TabsTrigger>
+            </TabsList>
 
-          <Select value={filters.priority} onValueChange={(value) => setFilters({ ...filters, priority: value })}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Prioridade" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas</SelectItem>
-              <SelectItem value="low">Baixa</SelectItem>
-              <SelectItem value="medium">Média</SelectItem>
-              <SelectItem value="high">Alta</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Button variant="outline" size="sm">
-            <Filter className="w-4 h-4 mr-2" />
-            Mais Filtros
-          </Button>
-        </div>
-
-        {/* Requirements Grid */}
-        <Tabs defaultValue="active" className="w-full">
-          <TabsList className="mb-6">
-            <TabsTrigger value="active" className="flex items-center gap-2">
-              Requisitos Ativos ({activeRequirements.length})
-            </TabsTrigger>
-            <TabsTrigger value="planning" className="flex items-center gap-2">
-              Em Planejamento ({requirements.filter((r) => r.status === "planning").length})
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="active">
-            {activeRequirements.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {activeRequirements
-                  .filter((req) => req.status !== "planning")
-                  .map((requirement) => (
-                    <RequirementCard key={requirement.id} requirement={requirement} />
-                  ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <div className="text-gray-400 mb-4">
-                  <MoreHorizontal className="w-16 h-16 mx-auto" />
+            <TabsContent value="active">
+              {activeRequirements.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {activeRequirements
+                    .filter((req) => req.status !== "planning")
+                    .map((requirement) => (
+                      <RequirementCard key={requirement.id} requirement={requirement} />
+                    ))}
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum requisito ativo</h3>
-                <p className="text-gray-600 mb-4">Comece criando seu primeiro requisito</p>
-                <Button onClick={() => setIsRequirementDialogOpen(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Criar Primeiro Requisito
-                </Button>
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="planning">
-            {requirements.filter((r) => r.status === "planning").length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {requirements
-                  .filter((req) => req.status === "planning")
-                  .map((requirement) => (
-                    <RequirementCard key={requirement.id} requirement={requirement} />
-                  ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <div className="text-gray-400 mb-4">
-                  <Calendar className="w-16 h-16 mx-auto" />
+              ) : (
+                <div className="text-center py-12">
+                  <div className="text-gray-400 mb-4">
+                    <MoreHorizontal className="w-16 h-16 mx-auto" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum requisito ativo</h3>
+                  <p className="text-gray-600 mb-4">Comece criando seu primeiro requisito</p>
+                  <Button onClick={() => setIsRequirementDialogOpen(true)}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Criar Primeiro Requisito
+                  </Button>
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum requisito em planejamento</h3>
-                <p className="text-gray-600">Todos os requisitos já estão em desenvolvimento</p>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+              )}
+            </TabsContent>
 
-        {/* Quick Actions */}
-        <div className="mt-8 p-6 bg-white rounded-lg shadow-sm">
-          <h3 className="text-lg font-semibold mb-4">Ações Rápidas</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button
-              variant="outline"
-              className="justify-start h-auto p-4"
-              onClick={() => setIsCreateTemplateModalOpen(true)}
-            >
-              <div className="text-left">
-                <div className="font-medium">Criar Template</div>
-                <div className="text-sm text-gray-600">Salvar estrutura para reutilizar</div>
-              </div>
-            </Button>
-            <Button
-              variant="outline"
-              className="justify-start h-auto p-4"
-              onClick={() => setIsWeeklyReportModalOpen(true)}
-            >
-              <div className="text-left">
-                <div className="font-medium">Relatório Semanal</div>
-                <div className="text-sm text-gray-600">Gerar relatório de progresso</div>
-              </div>
-            </Button>
-            <Link href="/settings">
-              <Button variant="outline" className="justify-start h-auto p-4 w-full">
+            <TabsContent value="planning">
+              {requirements.filter((r) => r.status === "planning").length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {requirements
+                    .filter((req) => req.status === "planning")
+                    .map((requirement) => (
+                      <RequirementCard key={requirement.id} requirement={requirement} />
+                    ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <div className="text-gray-400 mb-4">
+                    <Calendar className="w-16 h-16 mx-auto" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum requisito em planejamento</h3>
+                  <p className="text-gray-600">Todos os requisitos já estão em desenvolvimento</p>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+
+          {/* Quick Actions */}
+          <div className="mt-8 p-6 bg-white rounded-lg shadow-sm">
+            <h3 className="text-lg font-semibold mb-4">Ações Rápidas</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Button
+                variant="outline"
+                className="justify-start h-auto p-4"
+                onClick={() => setIsCreateTemplateModalOpen(true)}
+              >
                 <div className="text-left">
-                  <div className="font-medium">Configurações</div>
-                  <div className="text-sm text-gray-600">Personalizar workspace</div>
+                  <div className="font-medium">Criar Template</div>
+                  <div className="text-sm text-gray-600">Salvar estrutura para reutilizar</div>
                 </div>
               </Button>
-            </Link>
+              <Button
+                variant="outline"
+                className="justify-start h-auto p-4"
+                onClick={() => setIsWeeklyReportModalOpen(true)}
+              >
+                <div className="text-left">
+                  <div className="font-medium">Relatório Semanal</div>
+                  <div className="text-sm text-gray-600">Gerar relatório de progresso</div>
+                </div>
+              </Button>
+              <Link href="/settings">
+                <Button variant="outline" className="justify-start h-auto p-4 w-full">
+                  <div className="text-left">
+                    <div className="font-medium">Configurações</div>
+                    <div className="text-sm text-gray-600">Personalizar workspace</div>
+                  </div>
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
+
+        {/* Modals */}
+        <RequirementActivationModal
+          requirement={selectedRequirementForActivation}
+          users={users}
+          isOpen={isActivationModalOpen}
+          onClose={() => {
+            setIsActivationModalOpen(false)
+            setSelectedRequirementForActivation(null)
+          }}
+          onActivate={handleActivateRequirement}
+          onRequestApproval={handleRequestApproval}
+        />
+
+        <RequirementTemplatesModal
+          isOpen={isTemplatesModalOpen}
+          onClose={() => setIsTemplatesModalOpen(false)}
+          onCreateFromTemplate={handleCreateFromTemplate}
+          onSaveAsTemplate={handleSaveTemplate}
+        />
+
+        <CreateTemplateModal
+          requirements={requirements}
+          isOpen={isCreateTemplateModalOpen}
+          onClose={() => setIsCreateTemplateModalOpen(false)}
+          onSaveTemplate={handleSaveTemplate}
+        />
+
+        <WeeklyReportModal
+          isOpen={isWeeklyReportModalOpen}
+          onClose={() => setIsWeeklyReportModalOpen(false)}
+          requirements={requirements}
+          projectStats={projectStats}
+        />
+
+        <GlobalSearchModal
+          isOpen={isGlobalSearchOpen}
+          onClose={() => setIsGlobalSearchOpen(false)}
+          requirements={requirements}
+          users={users}
+        />
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirmar Exclusão</DialogTitle>
+              <DialogDescription>
+                Tem certeza que deseja excluir o requisito "{requirementToDelete?.title}"? 
+                Esta ação não pode ser desfeita e todas as tasks associadas serão removidas.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button variant="destructive" onClick={confirmDeleteRequirement}>
+                Excluir
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
-
-      {/* Modals */}
-      <RequirementActivationModal
-        requirement={selectedRequirementForActivation}
-        users={users}
-        isOpen={isActivationModalOpen}
-        onClose={() => {
-          setIsActivationModalOpen(false)
-          setSelectedRequirementForActivation(null)
-        }}
-        onActivate={handleActivateRequirement}
-        onRequestApproval={handleRequestApproval}
-      />
-
-      <RequirementTemplatesModal
-        isOpen={isTemplatesModalOpen}
-        onClose={() => setIsTemplatesModalOpen(false)}
-        onCreateFromTemplate={handleCreateFromTemplate}
-        onSaveAsTemplate={handleSaveTemplate}
-      />
-
-      <CreateTemplateModal
-        requirements={requirements}
-        isOpen={isCreateTemplateModalOpen}
-        onClose={() => setIsCreateTemplateModalOpen(false)}
-        onSaveTemplate={handleSaveTemplate}
-      />
-
-      <WeeklyReportModal
-        requirements={requirements}
-        projectStats={projectStats}
-        isOpen={isWeeklyReportModalOpen}
-        onClose={() => setIsWeeklyReportModalOpen(false)}
-      />
-
-      <GlobalSearchModal
-        requirements={requirements}
-        users={users}
-        isOpen={isGlobalSearchOpen}
-        onClose={() => setIsGlobalSearchOpen(false)}
-      />
-    </div>
+    </AuthGuard>
   )
 }

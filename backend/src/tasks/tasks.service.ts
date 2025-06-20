@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Task } from './entities/task.entity';
 import { SubTask } from './entities/subtask.entity';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class TasksService {
@@ -11,35 +12,45 @@ export class TasksService {
     private tasksRepository: Repository<Task>,
     @InjectRepository(SubTask)
     private subtasksRepository: Repository<SubTask>,
+    @InjectRepository(User)
+    private usersRepository: Repository<User>,
   ) {}
 
-  async create(createTaskDto: Partial<Task>): Promise<Task> {
-    const task = this.tasksRepository.create(createTaskDto);
+  async create(createTaskDto: Partial<Task> & { assigneeId?: string }): Promise<Task> {
+    const { assigneeId, ...rest } = createTaskDto;
+    const task = this.tasksRepository.create(rest);
+    if (assigneeId) {
+      const found = await this.usersRepository.findOne({ where: { id: assigneeId } });
+      task.assignee = found || undefined;
+    }
     return this.tasksRepository.save(task);
   }
 
   async findAll(): Promise<Task[]> {
     return this.tasksRepository.find({
-      relations: ['owner', 'requirement', 'subtasks', 'comments', 'attachments', 'activities'],
+      relations: ['owner', 'requirement', 'subtasks', 'comments', 'attachments', 'activities', 'assignee'],
     });
   }
 
   async findOne(id: string): Promise<Task> {
     const task = await this.tasksRepository.findOne({
       where: { id },
-      relations: ['owner', 'requirement', 'subtasks', 'comments', 'attachments', 'activities'],
+      relations: ['owner', 'requirement', 'subtasks', 'comments', 'attachments', 'activities', 'assignee'],
     });
-
     if (!task) {
       throw new NotFoundException(`Task with ID ${id} not found`);
     }
-
     return task;
   }
 
-  async update(id: string, updateTaskDto: Partial<Task>): Promise<Task> {
+  async update(id: string, updateTaskDto: Partial<Task> & { assigneeId?: string }): Promise<Task> {
+    const { assigneeId, ...rest } = updateTaskDto;
     const task = await this.findOne(id);
-    Object.assign(task, updateTaskDto);
+    Object.assign(task, rest);
+    if (assigneeId) {
+      const found = await this.usersRepository.findOne({ where: { id: assigneeId } });
+      task.assignee = found || undefined;
+    }
     return this.tasksRepository.save(task);
   }
 

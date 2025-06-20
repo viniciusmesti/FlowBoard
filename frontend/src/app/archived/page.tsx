@@ -4,12 +4,13 @@ import { ArrowLeft, Calendar, CheckCircle, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { AuthGuard } from "@/components/auth-guard"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { useScrumBoard } from "@/hooks/useScrumBoard"
+import { useScrumBoardContext } from "@/contexts/ScrumBoardContext"
 import Link from "next/link"
 
 export default function ArchivedPage() {
-  const { requirements, updateRequirement } = useScrumBoard()
+  const { requirements, updateRequirement } = useScrumBoardContext()
 
   const completedRequirements = requirements.filter((req) => req.status === "completed")
 
@@ -24,7 +25,8 @@ export default function ArchivedPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <AuthGuard>
+      <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-6 py-4">
@@ -197,6 +199,7 @@ export default function ArchivedPage() {
           </div>
         )}
       </div>
-    </div>
+      </div>
+      </AuthGuard>
   )
 }

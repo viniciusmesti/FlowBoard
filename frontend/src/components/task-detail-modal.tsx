@@ -1,4 +1,4 @@
-"use client"
+"use client" 
 
 import { useState } from "react"
 import type { Task, User, Comment, SubTask } from "@/types"
@@ -27,6 +27,7 @@ import {
   Save,
   X,
 } from "lucide-react"
+import { Label } from "@/components/ui/label"
 
 interface TaskDetailModalProps {
   task: Task | null
@@ -41,6 +42,8 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate }: Task
   const [editedTask, setEditedTask] = useState<Partial<Task>>({})
   const [newComment, setNewComment] = useState("")
   const [newSubtask, setNewSubtask] = useState("")
+  const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null)
+  const [uploading, setUploading] = useState(false)
 
   if (!task) return null
 
@@ -89,6 +92,30 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate }: Task
   const subtaskProgress = task.subtasks.length > 0 ? (completedSubtasks / task.subtasks.length) * 100 : 0
 
   const currentTask = { ...task, ...editedTask }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSelectedFiles(e.target.files)
+  }
+
+  const handleUploadFiles = async () => {
+    if (!selectedFiles || selectedFiles.length === 0) return
+    setUploading(true)
+    // Aqui você vai chamar sua API de upload (ver backend abaixo)
+    // Exemplo:
+    const formData = new FormData()
+    Array.from(selectedFiles).forEach(file => formData.append("files", file))
+    // Supondo que você tenha uma rota /api/tasks/:id/attachments
+    const res = await fetch(`/api/tasks/${task.id}/attachments`, {
+      method: "POST",
+      body: formData,
+    })
+    if (res.ok) {
+      const newAttachments = await res.json()
+      onUpdate({ attachments: newAttachments }) // Atualize a task com os novos anexos
+      setSelectedFiles(null)
+    }
+    setUploading(false)
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -267,6 +294,20 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate }: Task
 
               <TabsContent value="attachments">
                 <div className="space-y-3">
+                  {/* Upload de Anexos */}
+                  <div className="flex gap-2 items-center mb-2">
+                    <Input
+                      type="file"
+                      multiple
+                      onChange={handleFileChange}
+                      className="w-auto"
+                    />
+                    <Button size="sm" onClick={handleUploadFiles} disabled={uploading}>
+                      <Paperclip className="w-4 h-4 mr-1" />
+                      {uploading ? "Enviando..." : "Anexar"}
+                    </Button>
+                  </div>
+
                   {task.attachments.map((attachment) => (
                     <div key={attachment.id} className="flex items-center gap-3 p-3 border rounded">
                       <Paperclip className="w-4 h-4" />
@@ -276,8 +317,10 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate }: Task
                           <p className="text-xs text-gray-500">{(attachment.size / 1024).toFixed(1)} KB</p>
                         )}
                       </div>
-                      <Button size="sm" variant="outline">
-                        Download
+                      <Button size="sm" variant="outline" asChild>
+                        <a href={attachment.url} download>
+                          Download
+                        </a>
                       </Button>
                     </div>
                   ))}
@@ -381,18 +424,18 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate }: Task
 
             {/* Due Date */}
             <div>
-              <label className="text-sm font-medium mb-2 block items-center gap-2">
+              <Label htmlFor="end-date" className="text-sm font-medium mb-2 block items-center gap-2">
                 <Calendar className="w-4 h-4" />
                 Data de Entrega
-              </label>
+              </Label>
               {isEditing ? (
                 <Input
                   type="date"
-                  value={editedTask.dueDate ?? task.dueDate ?? ""}
-                  onChange={(e) => setEditedTask({ ...editedTask, dueDate: e.target.value })}
+                  value={editedTask.endDate ?? task.endDate ?? ""}
+                  onChange={(e) => setEditedTask({ ...editedTask, endDate: e.target.value })}
                 />
-              ) : task.dueDate ? (
-                <span className="text-sm">{new Date(task.dueDate).toLocaleDateString("pt-BR")}</span>
+              ) : task.endDate ? (
+                <span className="text-sm">{new Date(task.endDate).toLocaleDateString("pt-BR")}</span>
               ) : (
                 <span className="text-sm text-gray-500">Não definida</span>
               )}

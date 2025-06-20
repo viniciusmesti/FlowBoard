@@ -21,17 +21,20 @@ export function middleware(request: NextRequest) {
       request.cookies.get("auth_token")?.value || request.headers.get("authorization")?.replace("Bearer ", "")
 
     if (!token) {
-      return NextResponse.redirect(new URL("/login", request.url))
+            // return NextResponse.redirect(new URL("/login", request.url))
+            return NextResponse.next()
     }
 
     try {
       const payload = verifyToken(token)
       if (!payload) {
-        return NextResponse.redirect(new URL("/login", request.url))
+                // return NextResponse.redirect(new URL("/login", request.url))
+                return NextResponse.next()
       }
       return NextResponse.next()
     } catch (error) {
-      return NextResponse.redirect(new URL("/login", request.url))
+            // return NextResponse.redirect(new URL("/login", request.url))
+            return NextResponse.next()
     }
   }
 

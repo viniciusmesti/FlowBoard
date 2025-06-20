@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useAuth } from "@/contexts/AuthContext"
@@ -23,8 +23,15 @@ export default function RegisterPage() {
   const [role, setRole] = useState<User["role"]>("developer")
   const [passwordError, setPasswordError] = useState("")
 
-  const { register, isLoading, error } = useAuth()
+  const { register, isLoading, error, user } = useAuth()
   const router = useRouter()
+
+  useEffect(() => {
+    if (!isLoading && user) {
+      router.push("/")
+    }
+  }, [user, isLoading, router])
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -47,7 +54,7 @@ export default function RegisterPage() {
 
     const success = await register(name, email, password, role)
     if (success) {
-      router.push("/")
+       router.push("/login")
     }
   }
 

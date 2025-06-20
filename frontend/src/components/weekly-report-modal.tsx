@@ -48,7 +48,7 @@ export function WeeklyReportModal({ requirements, projectStats, isOpen, onClose 
     )
 
     const overdueTasks = allTasks.filter(
-      (task) => task.dueDate && new Date(task.dueDate) < now && task.status !== "done",
+      (task) => task.endDate && new Date(task.endDate) < now && task.status !== "done",
     )
 
     const totalEstimatedHours = allTasks.reduce((acc, task) => acc + (task.estimatedHours || 0), 0)

@@ -39,7 +39,7 @@ export interface User {
     priority: "low" | "medium" | "high" | "urgent"
     assignee?: User
     reporter: User
-    dueDate?: string
+    endDate?: string
     estimatedHours?: number
     actualHours?: number
     tags: string[]

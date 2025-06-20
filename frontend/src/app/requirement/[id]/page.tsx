@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { ArrowLeft, Plus, Settings, Users, Clock } from "lucide-react"
+import { ArrowLeft, Plus, Settings, Users, Clock, MoreHorizontal, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { AuthGuard } from "@/components/auth-guard"
 import {
   Dialog,
   DialogContent,
@@ -20,13 +21,21 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useScrumBoard } from "@/hooks/useScrumBoard"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { useScrumBoardContext } from "@/contexts/ScrumBoardContext"
 import { useDragAndDrop } from "@/hooks/useDragAndDrop"
 import { useNotifications } from "@/contexts/NotificationContext"
 import { TaskCard } from "@/components/task-card"
 import { TaskDetailModal } from "@/components/task-detail-modal"
 import type { Task, Requirement } from "@/types"
 import Link from "next/link"
+import { useAuth } from "@/contexts/AuthContext"
 
 const statusColumns = [
   { id: "backlog", title: "Backlog", color: "bg-gray-400" },
@@ -41,34 +50,40 @@ export default function RequirementPage() {
   const router = useRouter()
   const requirementId = params.id as string
 
-  const { requirements, users, addTask, updateTask, deleteTask, moveTask, updateRequirement } = useScrumBoard()
+  const { requirements, users, addTask, updateTask, deleteTask, moveTask, updateRequirement, deleteRequirement } = useScrumBoardContext()
   const { addNotification } = useNotifications()
   const { draggedTask, dragOverColumn, handleDragStart, handleDragEnd, handleDragOver, handleDragLeave, handleDrop } =
     useDragAndDrop()
+  const { user: loggedUser } = useAuth()
 
   const [requirement, setRequirement] = useState<Requirement | null>(null)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false)
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
   const [newTask, setNewTask] = useState({
     title: "",
     description: "",
     priority: "medium" as const,
     assignee: "",
-    dueDate: "",
+    endDate: "",
     estimatedHours: "",
     tags: "",
   })
+
+  const usersWithLogged = users.some(u => u.id === loggedUser?.id)
+    ? users
+    : [...users, ...(loggedUser ? [loggedUser] : [])]
 
   useEffect(() => {
     const foundRequirement = requirements.find((req) => req.id === requirementId)
     if (foundRequirement) {
       setRequirement(foundRequirement)
     } else {
-      router.push("/")
+      setRequirement(null)
     }
-  }, [requirementId, requirements, router])
+  }, [requirementId, requirements])
 
   if (!requirement) {
     return (
@@ -85,43 +100,50 @@ export default function RequirementPage() {
   }
 
   const handleAddTask = () => {
-    if (newTask.title.trim()) {
-      const assignee = users.find((u) => u.id === newTask.assignee)
-      addTask(requirement.id, {
-        title: newTask.title,
-        description: newTask.description,
-        status: "todo",
-        priority: newTask.priority,
-        assignee,
-        reporter: users[0],
-        dueDate: newTask.dueDate || undefined,
-        estimatedHours: newTask.estimatedHours ? Number(newTask.estimatedHours) : undefined,
-        tags: newTask.tags ? newTask.tags.split(",").map((t) => t.trim()) : [],
-        comments: [],
-        attachments: [],
-        activities: [],
-        subtasks: [],
-        dependencies: [],
-      })
-
-      addNotification({
-        type: "success",
-        title: "Task Criada",
-        message: `"${newTask.title}" foi adicionada ao requisito`,
-        duration: 3000,
-      })
-
-      setNewTask({
-        title: "",
-        description: "",
-        priority: "medium",
-        assignee: "",
-        dueDate: "",
-        estimatedHours: "",
-        tags: "",
-      })
-      setIsTaskDialogOpen(false)
+    if (!newTask.title.trim()) {
+      alert("Por favor, insira um título para a task")
+      return
     }
+
+    if (!loggedUser) {
+      alert("Usuário não está logado")
+      return
+    }
+
+    const assignee = usersWithLogged.find((u) => u.id === newTask.assignee) || loggedUser
+
+    const taskData = {
+      title: newTask.title,
+      description: newTask.description,
+      priority: newTask.priority,
+      assignee: assignee,
+      endDate: newTask.endDate || undefined,
+      estimatedHours: newTask.estimatedHours ? Number(newTask.estimatedHours) : undefined,
+      tags: newTask.tags ? newTask.tags.split(",").map((tag) => tag.trim()) : [],
+      status: "backlog" as const,
+      reporter: loggedUser,
+      comments: [],
+      attachments: [],
+      activities: [],
+      subtasks: [],
+      dependencies: [],
+    }
+
+    addTask(requirement.id, taskData)
+
+    // Reset form
+    setNewTask({
+      title: "",
+      description: "",
+      priority: "medium",
+      assignee: "",
+      endDate: "",
+      estimatedHours: "",
+      tags: "",
+    })
+
+    // Close dialog
+    setIsTaskDialogOpen(false)
   }
 
   const handleTaskClick = (task: Task) => {
@@ -158,7 +180,7 @@ export default function RequirementPage() {
     const completed = requirement.tasks.filter((task) => task.status === "done").length
     const inProgress = requirement.tasks.filter((task) => task.status === "progress").length
     const overdue = requirement.tasks.filter(
-      (task) => task.dueDate && new Date(task.dueDate) < new Date() && task.status !== "done",
+      (task) => task.endDate && new Date(task.endDate) < new Date() && task.status !== "done",
     ).length
 
     return { total, completed, inProgress, overdue }
@@ -178,8 +200,26 @@ export default function RequirementPage() {
     router.push("/")
   }
 
+  const handleDeleteRequirement = () => {
+    setIsDeleteDialogOpen(true)
+  }
+
+  const confirmDeleteRequirement = () => {
+    if (requirement) {
+      deleteRequirement(requirement.id)
+      addNotification({
+        type: "info",
+        title: "Requisito Excluído",
+        message: `"${requirement.title}" foi excluído com sucesso`,
+        duration: 3000,
+      })
+      router.push("/")
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <AuthGuard>
+      <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-6 py-4">
@@ -236,7 +276,15 @@ export default function RequirementPage() {
                 </Button>
               )}
 
-              <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
+              <Dialog open={isTaskDialogOpen} onOpenChange={(open) => {
+                setIsTaskDialogOpen(open)
+                if (open && loggedUser) {
+                  setNewTask((prev) => ({
+                    ...prev,
+                    assignee: loggedUser.id
+                  }))
+                }
+              }}>
                 <DialogTrigger asChild>
                   <Button>
                     <Plus className="w-4 h-4 mr-2" />
@@ -296,7 +344,7 @@ export default function RequirementPage() {
                             <SelectValue placeholder="Selecionar" />
                           </SelectTrigger>
                           <SelectContent>
-                            {users.map((user) => (
+                            {usersWithLogged.map((user) => (
                               <SelectItem key={user.id} value={user.id}>
                                 {user.name}
                               </SelectItem>
@@ -307,12 +355,12 @@ export default function RequirementPage() {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="grid gap-2">
-                        <Label htmlFor="due-date">Data de Entrega</Label>
+                        <Label htmlFor="end-date">Data de Entrega</Label>
                         <Input
-                          id="due-date"
+                          id="end-date"
                           type="date"
-                          value={newTask.dueDate}
-                          onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
+                          value={newTask.endDate}
+                          onChange={(e) => setNewTask({ ...newTask, endDate: e.target.value })}
                         />
                       </div>
                       <div className="grid gap-2">
@@ -342,9 +390,19 @@ export default function RequirementPage() {
                 </DialogContent>
               </Dialog>
 
-              <Button variant="outline" size="sm">
-                <Settings className="w-4 h-4" />
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Settings className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleDeleteRequirement} className="text-red-600">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Excluir Requisito
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
@@ -451,8 +509,15 @@ export default function RequirementPage() {
             </div>
 
             {/* Assignees */}
-            {Array.from(new Set(requirement.tasks.map((task) => task.assignee).filter(Boolean))).map((user) => (
-              <div key={user!.id} className="flex items-center gap-2">
+            {Array.from(
+              new Map(
+                requirement.tasks
+                  .map((task) => task.assignee)
+                  .filter(Boolean)
+                  .map((user) => [user!.id, user])
+              ).values()
+            ).map((user) => (
+              <div key={`assignee-${user!.id}`} className="flex items-center gap-2">
                 <Avatar className="w-8 h-8">
                   <AvatarFallback className="text-xs">
                     {user!.name
@@ -475,7 +540,7 @@ export default function RequirementPage() {
         {/* Task Detail Modal */}
         <TaskDetailModal
           task={selectedTask}
-          users={users}
+          users={usersWithLogged}
           isOpen={isTaskDetailOpen}
           onClose={() => {
             setIsTaskDetailOpen(false)
@@ -483,7 +548,29 @@ export default function RequirementPage() {
           }}
           onUpdate={handleTaskUpdate}
         />
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirmar Exclusão</DialogTitle>
+              <DialogDescription>
+                Tem certeza que deseja excluir o requisito "{requirement?.title}"? 
+                Esta ação não pode ser desfeita e todas as tasks associadas serão removidas.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button variant="destructive" onClick={confirmDeleteRequirement}>
+                Excluir
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
-    </div>
+      </div>
+      </AuthGuard>
   )
 }

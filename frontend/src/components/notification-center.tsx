@@ -10,17 +10,37 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Bell, Clock, AlertTriangle, CheckCircle, ArrowRight, BellRing } from "lucide-react"
 import Link from "next/link"
 import { fetchNotifications } from "@/api/api"
+import { useAuth } from "@/contexts/AuthContext"
 
 export function NotificationCenter() {
+  const { user } = useAuth()
   const [isOpen, setIsOpen] = useState(false)
   const [notifications, setNotifications] = useState<NotificationItemDto[]>([])
   const [readIds, setReadIds] = useState<Set<string>>(new Set())
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    fetchNotifications()
-      .then(setNotifications)
-      .catch(console.error)
-  }, [])
+    const loadNotifications = async () => {
+      setIsLoading(true)
+      try {
+        // Se há usuário logado, usa o ID real, senão usa 'demo'
+        const userId = user?.id || 'demo'
+        console.log('Fetching notifications for user:', userId)
+        
+        const data = await fetchNotifications(userId)
+        if (data) {
+          console.log('Notifications loaded:', data.length, 'items')
+          setNotifications(data)
+        }
+      } catch (error) {
+        console.error('Error loading notifications:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadNotifications()
+  }, [user])
 
   const unreadCount = notifications.filter(n => !readIds.has(n.id)).length
 
@@ -78,6 +98,16 @@ export function NotificationCenter() {
         <div className="p-4 border-b bg-white flex justify-between items-center">
           <h3 className="font-semibold">Notificações</h3>
           <div className="flex items-center gap-2">
+            {!user && (
+              <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800">
+                Demo
+              </Badge>
+            )}
+            {user && (
+              <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
+                {user.name}
+              </Badge>
+            )}
             {unreadCount > 0 && (
               <Badge variant="secondary" className="text-xs bg-red-100 text-red-800">
                 {unreadCount} não lidas
@@ -90,8 +120,13 @@ export function NotificationCenter() {
             )}
           </div>
         </div>
-
-        {notifications.length > 0 ? (
+        
+        {isLoading ? (
+          <div className="p-8 text-center text-gray-500">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-3"></div>
+            <p className="text-sm">Carregando notificações...</p>
+          </div>
+        ) : notifications.length > 0 ? (
           <Tabs defaultValue="all" className="w-full">
             <TabsList className="grid grid-cols-4 border-b bg-gray-50">
               <TabsTrigger value="all">Todas {unreadCount > 0 && <Badge variant="secondary" className="ml-1 text-xs bg-gray-200">{unreadCount}</Badge>}</TabsTrigger>

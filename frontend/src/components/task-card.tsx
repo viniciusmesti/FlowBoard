@@ -93,7 +93,7 @@ export function TaskCard({
     }
   }
 
-  const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== "done"
+  const isOverdue = task.endDate && new Date(task.endDate) < new Date() && task.status !== "done"
 
   // Safe array access with fallbacks
   const subtasks = task.subtasks || []
@@ -311,10 +311,10 @@ export function TaskCard({
           </div>
 
           {/* Due Date */}
-          {task.dueDate && (
+          {task.endDate && (
             <div className={`flex items-center gap-1 text-xs ${isOverdue ? "text-red-600" : "text-gray-500"}`}>
               <Calendar className="w-3 h-3" />
-              <span>{new Date(task.dueDate).toLocaleDateString("pt-BR")}</span>
+              <span>{new Date(task.endDate).toLocaleDateString("pt-BR")}</span>
             </div>
           )}
         </div>
