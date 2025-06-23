@@ -238,7 +238,7 @@ export default function Dashboard() {
     const completedTasks = requirement.tasks?.filter((task) => task.status === "done").length || 0
     const inProgressTasks = requirement.tasks?.filter((task) => task.status === "progress").length || 0
     const overdueTasks =
-      requirement.tasks?.filter((task) => task.dueDate && new Date(task.dueDate) < new Date() && task.status !== "done")
+      requirement.tasks?.filter((task) => task.endDate && new Date(task.endDate) < new Date() && task.status !== "done")
         .length || 0
 
     const canActivate = requirement.status === "planning"

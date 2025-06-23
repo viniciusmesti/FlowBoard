@@ -176,6 +176,7 @@ export function useScrumBoard() {
 
       const newTask: Task = {
         ...task,
+        assignee: task.assignee ?? undefined,
         id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -353,7 +354,7 @@ export function useScrumBoard() {
     const allTasks = requirements.flatMap((req) => req.tasks || [])
     const completedTasks = allTasks.filter((task) => task.status === "done")
     const overdueTasks = allTasks.filter(
-      (task) => task.dueDate && new Date(task.dueDate) < new Date() && task.status !== "done",
+      (task) => task.endDate && new Date(task.endDate) < new Date() && task.status !== "done",
     )
     const tasksInProgress = allTasks.filter((task) => task.status === "progress")
 

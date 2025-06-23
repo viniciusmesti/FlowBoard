@@ -116,7 +116,8 @@ export default function RequirementPage() {
       title: newTask.title,
       description: newTask.description,
       priority: newTask.priority,
-      assignee: assignee,
+      ownerId: loggedUser.id,
+      assigneeId: assignee.id,
       endDate: newTask.endDate || undefined,
       estimatedHours: newTask.estimatedHours ? Number(newTask.estimatedHours) : undefined,
       tags: newTask.tags ? newTask.tags.split(",").map((tag) => tag.trim()) : [],
@@ -496,14 +497,13 @@ export default function RequirementPage() {
             <div className="flex items-center gap-2">
               <Avatar>
                 <AvatarFallback>
-                  {requirement.owner.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
+                  {requirement.owner && requirement.owner.name
+                    ? requirement.owner.name.split(" ").map((n) => n[0]).join("")
+                    : "?"}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <div className="font-medium text-sm">{requirement.owner.name}</div>
+                <div className="font-medium text-sm">{requirement.owner?.name ?? "Sem nome"}</div>
                 <div className="text-xs text-gray-600">Owner</div>
               </div>
             </div>
@@ -513,23 +513,22 @@ export default function RequirementPage() {
               new Map(
                 requirement.tasks
                   .map((task) => task.assignee)
-                  .filter(Boolean)
-                  .map((user) => [user!.id, user])
+                  .filter((user): user is import("@/types").User => Boolean(user))
+                  .map((user) => [user.id, user])
               ).values()
-            ).map((user) => (
-              <div key={`assignee-${user!.id}`} className="flex items-center gap-2">
+            ).map((user: import("@/types").User) => (
+              <div key={`assignee-${user.id}`} className="flex items-center gap-2">
                 <Avatar className="w-8 h-8">
                   <AvatarFallback className="text-xs">
-                    {user!.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")}
+                    {user.name
+                      ? user.name.split(" ").map((n: string) => n[0]).join("")
+                      : "?"}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <div className="font-medium text-sm">{user!.name}</div>
+                  <div className="font-medium text-sm">{user.name ?? "Sem nome"}</div>
                   <div className="text-xs text-gray-600">
-                    {requirement.tasks.filter((task) => task.assignee?.id === user!.id).length} tasks
+                    {requirement.tasks.filter((task) => task.assignee?.id === user.id).length} tasks
                   </div>
                 </div>
               </div>
