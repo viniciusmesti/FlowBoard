@@ -74,8 +74,8 @@ export class Task {
   @Column({ nullable: true })
   category?: string;
 
-  @Column('simple-array')
-  tags: string[];
+  @Column('simple-array', { default: '' })
+  tags: string[];  
 
   @OneToMany(() => Comment, comment => comment.task)
   comments: Comment[];

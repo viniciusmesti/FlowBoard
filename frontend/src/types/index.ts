@@ -39,7 +39,8 @@ export interface User {
     priority: "low" | "medium" | "high" | "urgent"
     assignee?: User
     reporter: User
-    endDate?: string
+    startDate?: string  // Adicione esta linha
+    endDate?: string    // Adicione esta linha
     estimatedHours?: number
     actualHours?: number
     tags: string[]

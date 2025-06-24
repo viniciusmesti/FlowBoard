@@ -96,10 +96,10 @@ export default function Dashboard() {
   const [requirementToDelete, setRequirementToDelete] = useState<Requirement | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
-  const activeRequirements = requirements.filter((req) => req.status !== "completed")
+  const activeRequirements = requirements.filter((req) => req.status === "active")
   const completedRequirements = requirements.filter((req) => req.status === "completed")
 
-  const handleAddRequirement = () => {
+  const handleAddRequirement = async () => {
     console.log("handleAddRequirement called with:", newRequirement) // Debug log
 
     if (!newRequirement.title.trim()) {
@@ -133,7 +133,7 @@ export default function Dashboard() {
 
       console.log("Creating requirement with data:", requirementData) // Debug log
 
-      const createdRequirement = addRequirement(requirementData)
+      const createdRequirement = await addRequirement(requirementData)
       console.log("Requirement created:", createdRequirement) // Debug log
 
       // Reset form
@@ -175,8 +175,8 @@ export default function Dashboard() {
     }
   }
 
-  const handleActivateRequirement = (requirementId: string, data: any) => {
-    updateRequirement(requirementId, data)
+  const handleActivateRequirement = async (requirementId: string, data: any) => {
+    await updateRequirement(requirementId, { ...data, status: "active" })
     setSelectedRequirementForActivation(null)
   }
 
@@ -238,7 +238,7 @@ export default function Dashboard() {
     const completedTasks = requirement.tasks?.filter((task) => task.status === "done").length || 0
     const inProgressTasks = requirement.tasks?.filter((task) => task.status === "progress").length || 0
     const overdueTasks =
-      requirement.tasks?.filter((task) => task.dueDate && new Date(task.dueDate) < new Date() && task.status !== "done")
+      requirement.tasks?.filter((task) => task.endDate && new Date(task.endDate) < new Date() && task.status !== "done")
         .length || 0
 
     const canActivate = requirement.status === "planning"

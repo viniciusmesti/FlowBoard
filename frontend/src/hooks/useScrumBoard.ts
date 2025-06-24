@@ -11,28 +11,28 @@ const mockUsers: User[] = [
     name: "João Silva",
     email: "joao@empresa.com",
     role: "admin",
-    avatar: "/placeholder.svg?height=32&width=32",
+    avatar: "/placeholder.png?height=32&width=32",
   },
   {
     id: "2",
     name: "Maria Santos",
     email: "maria@empresa.com",
     role: "developer",
-    avatar: "/placeholder.svg?height=32&width=32",
+    avatar: "/placeholder.png?height=32&width=32",
   },
   {
     id: "3",
     name: "Pedro Costa",
     email: "pedro@empresa.com",
     role: "developer",
-    avatar: "/placeholder.svg?height=32&width=32",
+    avatar: "/placeholder.png?height=32&width=32",
   },
   {
     id: "4",
     name: "Ana Oliveira",
     email: "ana@empresa.com",
     role: "designer",
-    avatar: "/placeholder.svg?height=32&width=32",
+    avatar: "/placeholder.png?height=32&width=32",
   },
 ]
 
@@ -353,7 +353,7 @@ export function useScrumBoard() {
     const allTasks = requirements.flatMap((req) => req.tasks || [])
     const completedTasks = allTasks.filter((task) => task.status === "done")
     const overdueTasks = allTasks.filter(
-      (task) => task.dueDate && new Date(task.dueDate) < new Date() && task.status !== "done",
+      (task) => task.endDate && new Date(task.endDate) < new Date() && task.status !== "done",
     )
     const tasksInProgress = allTasks.filter((task) => task.status === "progress")
 

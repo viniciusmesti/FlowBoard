@@ -42,9 +42,10 @@ import { Template } from './templates/entities/template.entity';
         Milestone, 
         RequirementComment, 
         ApprovalRequest,
-        Template
+        Template,
       ],
       synchronize: process.env.NODE_ENV !== 'production',
+      dropSchema: true,
     }),
     AuthModule,
     UsersModule,

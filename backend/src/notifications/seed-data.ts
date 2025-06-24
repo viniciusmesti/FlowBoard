@@ -19,23 +19,20 @@ export class SeedDataService {
   async createSampleData() {
     console.log('Creating sample data for notifications...');
 
-    // Criar usuário de exemplo
-    const user = await this.userRepo.findOne({ where: { email: 'test@flowboard.com' } });
-    if (!user) {
-      console.log('Creating test user...');
+    const fixedUserId = '56ee4874-c672-4ffa-a131-ffcd7cd706b9';
+
+    let testUser = await this.userRepo.findOne({ where: { id: fixedUserId } });
+    if (!testUser) {
+      console.log('Creating test user with fixed ID...');
       const newUser = this.userRepo.create({
+        id: fixedUserId,
         name: 'Test User',
         email: 'test@flowboard.com',
         password: 'password123', // Será hasheada automaticamente
         role: 'developer',
       });
-      await this.userRepo.save(newUser);
-      console.log('Test user created with ID:', newUser.id);
-    }
-
-    const testUser = await this.userRepo.findOne({ where: { email: 'test@flowboard.com' } });
-    if (!testUser) {
-      throw new Error('Failed to create or find test user');
+      testUser = await this.userRepo.save(newUser);
+      console.log('Test user created with ID:', testUser.id);
     }
 
     // Criar requirement com aprovação pendente
@@ -43,7 +40,6 @@ export class SeedDataService {
       where: { title: 'Sistema de Autenticação' } 
     });
     if (!pendingRequirement) {
-      console.log('Creating pending approval requirement...');
       const newReq = this.requirementRepo.create({
         title: 'Sistema de Autenticação',
         description: 'Implementar sistema de login e registro',
@@ -52,21 +48,19 @@ export class SeedDataService {
         priority: 'high',
         owner: testUser,
         startDate: new Date(),
-        endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 dias
+        endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         tags: ['auth', 'security'],
         approvalRequired: true,
         dependencies: [],
       });
       await this.requirementRepo.save(newReq);
-      console.log('Pending requirement created with ID:', newReq.id);
     }
 
-    // Criar requirement ativo com tasks atrasadas
+    // Criar requirement ativo com tasks
     const activeRequirement = await this.requirementRepo.findOne({ 
       where: { title: 'Interface do Usuário' } 
     });
     if (!activeRequirement) {
-      console.log('Creating active requirement with overdue tasks...');
       const newReq = this.requirementRepo.create({
         title: 'Interface do Usuário',
         description: 'Desenvolver interface responsiva',
@@ -74,15 +68,14 @@ export class SeedDataService {
         status: 'active',
         priority: 'medium',
         owner: testUser,
-        startDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 dias atrás
-        endDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000), // 10 dias
+        startDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+        endDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
         tags: ['ui', 'frontend'],
         approvalRequired: false,
         dependencies: [],
       });
       const savedReq = await this.requirementRepo.save(newReq);
 
-      // Criar task atrasada
       const overdueTask = this.taskRepo.create({
         title: 'Configurar CI/CD Pipeline',
         description: 'Implementar pipeline de integração contínua',
@@ -91,15 +84,14 @@ export class SeedDataService {
         owner: testUser,
         requirement: savedReq,
         requirementId: savedReq.id,
-        startDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), // 10 dias atrás
-        endDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 dias atrás (atrasada)
+        startDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+        endDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
         estimatedHours: 8,
         progress: 60,
         dependencies: [],
       });
       await this.taskRepo.save(overdueTask);
 
-      // Criar task com prazo próximo
       const dueSoonTask = this.taskRepo.create({
         title: 'Escrever testes unitários',
         description: 'Criar testes para componentes principais',
@@ -109,14 +101,12 @@ export class SeedDataService {
         requirement: savedReq,
         requirementId: savedReq.id,
         startDate: new Date(),
-        endDate: new Date(Date.now() + 5 * 60 * 60 * 1000), // 5 horas (próximo)
+        endDate: new Date(Date.now() + 5 * 60 * 60 * 1000),
         estimatedHours: 4,
         progress: 20,
         dependencies: [],
       });
       await this.taskRepo.save(dueSoonTask);
-
-      console.log('Active requirement with tasks created');
     }
 
     // Criar requirement concluído recentemente
@@ -124,7 +114,6 @@ export class SeedDataService {
       where: { title: 'Documentação da API' } 
     });
     if (!completedRequirement) {
-      console.log('Creating recently completed requirement...');
       const newReq = this.requirementRepo.create({
         title: 'Documentação da API',
         description: 'Criar documentação completa da API',
@@ -132,19 +121,17 @@ export class SeedDataService {
         status: 'completed',
         priority: 'medium',
         owner: testUser,
-        startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 dias atrás
-        endDate: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1 hora atrás (recentemente concluído)
+        startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+        endDate: new Date(Date.now() - 1 * 60 * 60 * 1000),
         tags: ['docs', 'api'],
         approvalRequired: false,
         progress: 100,
         dependencies: [],
       });
       await this.requirementRepo.save(newReq);
-      console.log('Completed requirement created');
     }
 
     console.log('Sample data creation completed!');
     console.log('Test user ID:', testUser.id);
-    console.log('You can now test notifications with this user ID');
   }
-} 
+}

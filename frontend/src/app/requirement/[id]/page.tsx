@@ -1,7 +1,7 @@
 "use client"
-
+ // statusColumns
 import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { ArrowLeft, Plus, Settings, Users, Clock, MoreHorizontal, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -49,6 +49,8 @@ export default function RequirementPage() {
   const params = useParams()
   const router = useRouter()
   const requirementId = params.id as string
+  const searchParams = useSearchParams()
+  const taskIdFromQuery = searchParams.get('taskId')
 
   const { requirements, users, addTask, updateTask, deleteTask, moveTask, updateRequirement, deleteRequirement } = useScrumBoardContext()
   const { addNotification } = useNotifications()
@@ -85,6 +87,30 @@ export default function RequirementPage() {
     }
   }, [requirementId, requirements])
 
+  useEffect(() => {
+    console.log('DEBUG: requirement', requirement);
+    console.log('DEBUG: taskIdFromQuery', taskIdFromQuery);
+    if (
+      requirement &&
+      taskIdFromQuery
+      ) {
+      const task = requirement.tasks.find(t => t.id === taskIdFromQuery);
+      console.log('DEBUG: task encontrada', task);
+      if (task) {
+        setSelectedTask(task);
+        setIsTaskDetailOpen(true);
+      }
+    }
+  }, [requirement, taskIdFromQuery]);
+
+  useEffect(() => {
+    console.log('DEBUG: requirement carregado', requirement);
+  }, [requirement]);
+
+  useEffect(() => {
+    console.log('DEBUG: requirements do contexto', requirements);
+  }, [requirements]);
+
   if (!requirement) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -93,8 +119,8 @@ export default function RequirementPage() {
           <p className="text-gray-600 mb-4">O requisito que você está procurando não existe.</p>
           <Link href="/">
             <Button>Voltar ao Dashboard</Button>
-          </Link>
-        </div>
+          </Link>       
+         </div>
       </div>
     )
   }
@@ -216,6 +242,15 @@ export default function RequirementPage() {
       router.push("/")
     }
   }
+
+  const handleCloseTaskModal = () => {
+    setIsTaskDetailOpen(false);
+    setSelectedTask(null);
+    // Remove o taskId da URL
+    const params = new URLSearchParams(window.location.search);
+    params.delete('taskId');
+    router.replace(`/requirement/${requirementId}${params.toString() ? `?${params.toString()}` : ''}`);
+  };
 
   return (
     <AuthGuard>
@@ -496,14 +531,18 @@ export default function RequirementPage() {
             <div className="flex items-center gap-2">
               <Avatar>
                 <AvatarFallback>
-                  {requirement.owner.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
+                  {requirement.owner?.name
+                    ? requirement.owner.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")
+                    : "?"}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <div className="font-medium text-sm">{requirement.owner.name}</div>
+                <div className="font-medium text-sm">
+                  {requirement.owner?.name ?? "Sem responsável"}
+                </div>
                 <div className="text-xs text-gray-600">Owner</div>
               </div>
             </div>
@@ -542,10 +581,7 @@ export default function RequirementPage() {
           task={selectedTask}
           users={usersWithLogged}
           isOpen={isTaskDetailOpen}
-          onClose={() => {
-            setIsTaskDetailOpen(false)
-            setSelectedTask(null)
-          }}
+          onClose={handleCloseTaskModal}
           onUpdate={handleTaskUpdate}
         />
 

@@ -18,7 +18,10 @@ export class TasksService {
 
   async create(createTaskDto: Partial<Task> & { assigneeId?: string }): Promise<Task> {
     const { assigneeId, ...rest } = createTaskDto;
-    const task = this.tasksRepository.create(rest);
+    const task = this.tasksRepository.create({
+      ...rest,
+      tags: rest.tags ?? [],
+    });
     if (assigneeId) {
       const found = await this.usersRepository.findOne({ where: { id: assigneeId } });
       task.assignee = found || undefined;

@@ -498,7 +498,7 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate }: Task
             <div className="text-xs text-gray-500 space-y-1">
               <p>Criado: {new Date(task.createdAt).toLocaleString("pt-BR")}</p>
               <p>Atualizado: {new Date(task.updatedAt).toLocaleString("pt-BR")}</p>
-              <p>Reporter: {task.reporter.name}</p>
+              <p>Reporter: {task.reporter?.name}</p>
             </div>
           </div>
         </div>

@@ -42,21 +42,24 @@ async function handleResponse<T>(res: Response): Promise<T> {
 }
 
 /**
- * Busca todas as notificações do usuário autenticado ou retorna mock se não autenticado.
+ * Busca todas as notificações do usuário autenticado.
  */
 export async function fetchNotifications(userId: string): Promise<NotificationItemDto[]> {
+  if (!userId) return [];
   try {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
     const res = await fetch(`${API_BASE}/notifications?userId=${encodeURIComponent(userId)}`, {
       credentials: "include",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
     });
 
-    // Se a requisição foi bem-sucedida, retorna os dados
     if (res.ok) {
       return handleResponse<NotificationItemDto[]>(res);
     }
 
-    // Se houve erro 401 ou qualquer outro erro, retorna mock
     console.warn(`Failed to fetch notifications: ${res.status} ${res.statusText}`);
     return mockNotifications;
   } catch (err) {
@@ -64,3 +67,4 @@ export async function fetchNotifications(userId: string): Promise<NotificationIt
     return mockNotifications;
   }
 }
+

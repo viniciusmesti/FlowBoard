@@ -1,7 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository }           from '@nestjs/typeorm';
 import { Repository }                from 'typeorm';
-
 import { Requirement }               from './entities/requirement.entity';
 import { CreateRequirementDto }      from './dto/create-requirement.dto';
 import { UpdateRequirementDto }      from './dto/update-requirement.dto';
@@ -15,24 +14,19 @@ export class RequirementsService {
   ) {}
 
   async create(dto: CreateRequirementDto): Promise<Requirement> {
+    const { ownerId, ...rest } = dto;
     const req = this.repo.create({
-      title: dto.title,
-      description: dto.description,
-      color: dto.color,
-      status: dto.status,
-      priority: dto.priority,
-      // relaciona apenas por id, o TypeORM resolve
-      owner: { id: dto.ownerId } as User,
-      startDate: dto.startDate,
-      endDate: dto.endDate,
-      estimatedHours: dto.estimatedHours,
-      budget: dto.budget,
+      ...rest,
+      ...(ownerId && { owner: { id: ownerId } as User }),
       dependencies: dto.dependencies || [],
-      category: dto.category,
       tags: dto.tags || [],
       approvalRequired: dto.approvalRequired ?? false,
     });
-    return this.repo.save(req);
+    const saved = await this.repo.save(req);
+    return this.repo.findOneOrFail({
+      where: { id: saved.id },
+      relations: ['owner', 'tasks', 'comments', 'approvalRequests']
+    });
   }
 
   findAll(): Promise<Requirement[]> {
@@ -59,6 +53,7 @@ export class RequirementsService {
   }
 
   async remove(id: string): Promise<void> {
-    await this.repo.delete(id);
+    const requirement = await this.findOne(id);
+    await this.repo.remove(requirement);
   }
 }
