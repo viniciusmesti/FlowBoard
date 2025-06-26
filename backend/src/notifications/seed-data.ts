@@ -30,6 +30,7 @@ export class SeedDataService {
         email: 'test@flowboard.com',
         password: 'password123', // Será hasheada automaticamente
         role: 'developer',
+        avatar: '/avatars/user.png',
       });
       testUser = await this.userRepo.save(newUser);
       console.log('Test user created with ID:', testUser.id);

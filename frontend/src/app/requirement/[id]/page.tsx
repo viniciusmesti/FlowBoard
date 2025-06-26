@@ -6,7 +6,7 @@ import { ArrowLeft, Plus, Settings, Users, Clock, MoreHorizontal, Trash2 } from 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { AuthGuard } from "@/components/auth-guard"
 import {
   Dialog,
@@ -36,6 +36,7 @@ import { TaskDetailModal } from "@/components/task-detail-modal"
 import type { Task, Requirement } from "@/types"
 import Link from "next/link"
 import { useAuth } from "@/contexts/AuthContext"
+import { v4 as uuidv4 } from 'uuid'
 
 const statusColumns = [
   { id: "backlog", title: "Backlog", color: "bg-gray-400" },
@@ -179,17 +180,51 @@ export default function RequirementPage() {
 
   const handleTaskUpdate = (updates: Partial<Task>) => {
     if (selectedTask) {
-      updateTask(requirement.id, selectedTask.id, updates)
-      setSelectedTask({ ...selectedTask, ...updates })
-
+      let description = "";
+      if (updates.status && updates.status !== selectedTask.status) {
+        description += `Status alterado de "${selectedTask.status}" para "${updates.status}". `;
+      }
+      if (updates.priority && updates.priority !== selectedTask.priority) {
+        description += `Prioridade alterada de "${selectedTask.priority}" para "${updates.priority}". `;
+      }
+      if (updates.assignee && updates.assignee.id !== selectedTask.assignee?.id) {
+        description += `Responsável alterado para "${updates.assignee.name}". `;
+      }
+      if (updates.title && updates.title !== selectedTask.title) {
+        description += `Título alterado. `;
+      }
+      if (updates.description && updates.description !== selectedTask.description) {
+        description += `Descrição alterada. `;
+      }
+      if (typeof updates.actualHours === "number" && updates.actualHours !== selectedTask.actualHours) {
+        description += `Horas gastas registradas: ${updates.actualHours}h. `;
+      }
+      let activities = selectedTask.activities || [];
+      if (description && loggedUser) {
+        activities = [
+          ...activities,
+          {
+            id: uuidv4(),
+            type: "updated" as const,
+            user: loggedUser,
+            description: description.trim(),
+            timestamp: new Date().toISOString(),
+          },
+        ];
+      }
+      updateTask(requirement.id, selectedTask.id, { ...updates, activities });
+      // Atualiza o selectedTask local
+      const updatedReq = requirements.find((req) => req.id === requirement.id);
+      const updatedTask = updatedReq?.tasks.find((t) => t.id === selectedTask.id);
+      setSelectedTask(updatedTask ? { ...updatedTask } : selectedTask);
       addNotification({
         type: "info",
         title: "Task Atualizada",
         message: `"${selectedTask.title}" foi atualizada`,
         duration: 3000,
-      })
+      });
     }
-  }
+  };
 
   const handleMoveTask = (taskId: string, newStatus: Task["status"]) => {
     moveTask(requirement.id, taskId, newStatus)
@@ -502,6 +537,25 @@ export default function RequirementPage() {
                       isDragging={draggedTask?.id === task.id}
                       onDragStart={handleDragStart}
                       onDragEnd={handleDragEnd}
+                      onUpdateTask={(updates) => {
+                        if (updates.status === "done" && loggedUser) {
+                          const newActivity = {
+                            id: uuidv4(),
+                            type: 'moved' as const,
+                            user: loggedUser,
+                            description: `Task concluída por ${loggedUser.name}`,
+                            timestamp: new Date().toISOString(),
+                          }
+                          const newActivities = [...(task.activities || []), newActivity]
+                          console.log('DEBUG: Salvando activities ao concluir', newActivities)
+                          updateTask(requirement.id, task.id, {
+                            ...updates,
+                            activities: newActivities,
+                          })
+                        } else {
+                          updateTask(requirement.id, task.id, updates)
+                        }
+                      }}
                     />
                   ))}
 
@@ -555,20 +609,23 @@ export default function RequirementPage() {
                   .filter(Boolean)
                   .map((user) => [user!.id, user])
               ).values()
-            ).map((user) => (
-              <div key={`assignee-${user!.id}`} className="flex items-center gap-2">
+            ).map((user) => user && (
+              <div key={`assignee-${user.id}`} className="flex items-center gap-2">
                 <Avatar className="w-8 h-8">
+                  {user.avatar ? (
+                    <AvatarImage src={user.avatar} alt={user.name} />
+                  ) : null}
                   <AvatarFallback className="text-xs">
-                    {user!.name
+                    {user.name
                       .split(" ")
                       .map((n) => n[0])
                       .join("")}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <div className="font-medium text-sm">{user!.name}</div>
+                  <div className="font-medium text-sm">{user.name}</div>
                   <div className="text-xs text-gray-600">
-                    {requirement.tasks.filter((task) => task.assignee?.id === user!.id).length} tasks
+                    {requirement.tasks.filter((task) => task.assignee?.id === user.id).length} tasks
                   </div>
                 </div>
               </div>

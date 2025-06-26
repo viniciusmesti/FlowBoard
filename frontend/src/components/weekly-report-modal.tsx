@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useRef } from "react"
 import type { Requirement, ProjectStats } from "@/types"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -32,6 +32,7 @@ interface WeeklyReportModalProps {
 export function WeeklyReportModal({ requirements, projectStats, isOpen, onClose }: WeeklyReportModalProps) {
   const [reportPeriod, setReportPeriod] = useState("this-week")
   const [reportType, setReportType] = useState("summary")
+  const reportRef = useRef<HTMLDivElement>(null)
 
   const reportData = useMemo(() => {
     const now = new Date()
@@ -51,8 +52,8 @@ export function WeeklyReportModal({ requirements, projectStats, isOpen, onClose 
       (task) => task.endDate && new Date(task.endDate) < now && task.status !== "done",
     )
 
-    const totalEstimatedHours = allTasks.reduce((acc, task) => acc + (task.estimatedHours || 0), 0)
-    const totalActualHours = allTasks.reduce((acc, task) => acc + (task.actualHours || 0), 0)
+    const totalEstimatedHours = completedTasksThisWeek.reduce((acc, task) => acc + (task.estimatedHours || 0), 0)
+    const totalActualHours = completedTasksThisWeek.reduce((acc, task) => acc + (task.actualHours || 0), 0)
 
     const productivityRate = totalEstimatedHours > 0 ? (totalActualHours / totalEstimatedHours) * 100 : 0
 
@@ -83,9 +84,20 @@ export function WeeklyReportModal({ requirements, projectStats, isOpen, onClose 
     }
   }, [requirements, reportPeriod])
 
-  const handleExportPDF = () => {
-    // Implementar exportação para PDF
-    console.log("Exportando relatório para PDF...")
+  const handleExportPDF = async () => {
+    if (reportRef.current) {
+      // @ts-ignore
+      const html2pdf = (await import("html2pdf.js")).default;
+      html2pdf()
+        .set({
+          margin: 0.5,
+          filename: `relatorio-semanal.pdf`,
+          html2canvas: { scale: 2 },
+          jsPDF: { unit: "in", format: "a4", orientation: "portrait" },
+        })
+        .from(reportRef.current)
+        .save()
+    }
   }
 
   const handleSendEmail = () => {
@@ -148,6 +160,7 @@ export function WeeklyReportModal({ requirements, projectStats, isOpen, onClose 
           </div>
         </DialogHeader>
 
+        <div ref={reportRef} className="mt-2">
         <Tabs value={reportType} onValueChange={setReportType} className="w-full">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="summary">Resumo</TabsTrigger>
@@ -426,6 +439,7 @@ export function WeeklyReportModal({ requirements, projectStats, isOpen, onClose 
             </div>
           </TabsContent>
         </Tabs>
+        </div>
       </DialogContent>
     </Dialog>
   )

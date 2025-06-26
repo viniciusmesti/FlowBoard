@@ -223,12 +223,12 @@ export function useScrumBoard() {
                         ...updates,
                         updatedAt: new Date().toISOString(),
                         // Ensure arrays remain arrays after updates
-                        comments: updates.comments || task.comments || [],
-                        attachments: updates.attachments || task.attachments || [],
-                        activities: updates.activities || task.activities || [],
-                        subtasks: updates.subtasks || task.subtasks || [],
-                        dependencies: updates.dependencies || task.dependencies || [],
-                        tags: updates.tags || task.tags || [],
+                        comments: updates.comments ?? task.comments ?? [],
+                        attachments: updates.attachments ?? task.attachments ?? [],
+                        activities: updates.activities ?? task.activities ?? [],
+                        subtasks: updates.subtasks ?? task.subtasks ?? [],
+                        dependencies: updates.dependencies ?? task.dependencies ?? [],
+                        tags: updates.tags ?? task.tags ?? [],
                       }
                     : task,
                 ),

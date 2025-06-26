@@ -23,7 +23,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Progress } from "@/components/ui/progress"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Dialog,
@@ -346,6 +346,9 @@ export default function Dashboard() {
             {requirement.owner && (
               <div className="flex items-center gap-1">
                 <Avatar className="w-5 h-5">
+                  {requirement.owner.avatar ? (
+                    <AvatarImage src={requirement.owner.avatar} alt={requirement.owner.name} />
+                  ) : null}
                   <AvatarFallback className="text-xs">
                     {requirement.owner.name
                       .split(" ")
