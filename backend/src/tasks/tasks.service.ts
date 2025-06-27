@@ -22,13 +22,12 @@ export class TasksService {
 
   async create(createTaskDto: Partial<Task> & { assigneeId?: string }): Promise<Task> {
     const { assigneeId, ...rest } = createTaskDto;
-    const task = this.tasksRepository.create({
-      ...rest,
-      tags: rest.tags ?? [],
-    });
+    const task = this.tasksRepository.create(rest);
     if (assigneeId) {
-      const found = await this.usersRepository.findOne({ where: { id: assigneeId } });
-      task.assignee = found || undefined;
+      const assignee = await this.usersRepository.findOne({ where: { id: assigneeId } });
+      if (assignee) {
+        task.assignee = assignee;
+      }
     }
     return this.tasksRepository.save(task);
   }
@@ -55,13 +54,21 @@ export class TasksService {
     return task;
   }
 
-  async update(id: string, updateTaskDto: Partial<Task> & { assigneeId?: string }): Promise<Task> {
-    const { assigneeId, ...rest } = updateTaskDto;
+  async update(id: string, updateTaskDto: Partial<Task> & { assigneeId?: string, ownerId?: string }): Promise<Task> {
+    const { assigneeId, ownerId, ...rest } = updateTaskDto;
     const task = await this.findOne(id);
     Object.assign(task, rest);
+    if (ownerId) {
+      const owner = await this.usersRepository.findOne({ where: { id: ownerId } });
+      if (owner) {
+        task.owner = owner;
+      }
+    }
     if (assigneeId) {
-      const found = await this.usersRepository.findOne({ where: { id: assigneeId } });
-      task.assignee = found || undefined;
+      const assignee = await this.usersRepository.findOne({ where: { id: assigneeId } });
+      if (assignee) {
+        task.assignee = assignee;
+      }
     }
     return this.tasksRepository.save(task);
   }

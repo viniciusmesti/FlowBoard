@@ -75,6 +75,7 @@ export class NotificationsService {
   }
 
   async getNotifications(userId?: string): Promise<NotificationItemDto[]> {
+    console.log(`[NotificationsService] getNotifications chamado para userId:`, userId);
     if (!userId || userId === 'demo' || userId === 'guest') {
       return this.getMockNotifications();
     }
@@ -102,13 +103,15 @@ export class NotificationsService {
       id: t.id,
       endDate: t.endDate,
       status: t.status,
+      owner: t.owner?.id,
+      assignee: t.assignee?.id
     })));
 
       const items: NotificationItemDto[] = [];
 
       // Notificações de tasks (atrasadas e prazo próximo)
       for (const task of userTasks) {
-        const dueDate = task.endDate;
+        const dueDate = task.endDate ? new Date(task.endDate) : null;
         if (!dueDate) continue;
 
         // Task atrasada

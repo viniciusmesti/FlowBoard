@@ -176,6 +176,7 @@ export function useScrumBoard() {
 
       const newTask: Task = {
         ...task,
+        assignee: task.assignee ?? undefined,
         id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),

@@ -286,21 +286,21 @@ export function TaskCard({
             </div>
           )}
 
-          {/* Footer */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {/* Assignee */}
-              {task.assignee && (
-                <Avatar className="w-6 h-6">
-                  <AvatarImage src={task.assignee.avatar || "/placeholder.png"} />
-                  <AvatarFallback className="text-xs">
-                    {task.assignee.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")}
-                  </AvatarFallback>
-                </Avatar>
-              )}
+        {/* Footer */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {/* Assignee */}
+            {task.assignee && (
+              <Avatar className="w-6 h-6">
+                <AvatarImage src={task.assignee.avatar || "/placeholder.svg"} />
+                <AvatarFallback className="text-xs">
+                  {task.assignee.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")}
+                </AvatarFallback>
+              </Avatar>
+            )}
 
               {/* Comments & Attachments */}
               <div className="flex items-center gap-2 text-xs text-gray-500">
