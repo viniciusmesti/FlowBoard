@@ -1,7 +1,7 @@
 import { RequirementTemplate } from '@/types'
 import { NotificationItemDto } from './dto/notification-item.dto' // if needed
 
-const API_BASE = '/api'
+const API_BASE = process.env.NEXT_PUBLIC_API_URL
 
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {

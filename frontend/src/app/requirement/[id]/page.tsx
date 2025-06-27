@@ -182,13 +182,13 @@ export default function RequirementPage() {
     if (selectedTask) {
       let description = "";
       if (updates.status && updates.status !== selectedTask.status) {
-        description += `Status alterado de "${selectedTask.status}" para "${updates.status}". `;
+        description += `Status alterado de \"${selectedTask.status}\" para \"${updates.status}\". `;
       }
       if (updates.priority && updates.priority !== selectedTask.priority) {
-        description += `Prioridade alterada de "${selectedTask.priority}" para "${updates.priority}". `;
+        description += `Prioridade alterada de \"${selectedTask.priority}\" para \"${updates.priority}\". `;
       }
       if (updates.assignee && updates.assignee.id !== selectedTask.assignee?.id) {
-        description += `Responsável alterado para "${updates.assignee.name}". `;
+        description += `Responsável alterado para \"${updates.assignee.name}\". `;
       }
       if (updates.title && updates.title !== selectedTask.title) {
         description += `Título alterado. `;
@@ -199,7 +199,8 @@ export default function RequirementPage() {
       if (typeof updates.actualHours === "number" && updates.actualHours !== selectedTask.actualHours) {
         description += `Horas gastas registradas: ${updates.actualHours}h. `;
       }
-      let activities = selectedTask.activities || [];
+      // Mesclar activities vindas do modal com as locais
+      let activities = updates.activities ?? selectedTask.activities ?? [];
       if (description && loggedUser) {
         activities = [
           ...activities,
@@ -213,14 +214,12 @@ export default function RequirementPage() {
         ];
       }
       updateTask(requirement.id, selectedTask.id, { ...updates, activities });
-      // Atualiza o selectedTask local
-      const updatedReq = requirements.find((req) => req.id === requirement.id);
-      const updatedTask = updatedReq?.tasks.find((t) => t.id === selectedTask.id);
-      setSelectedTask(updatedTask ? { ...updatedTask } : selectedTask);
+      // Atualiza o selectedTask local imediatamente
+      setSelectedTask(prev => prev ? { ...prev, ...updates, activities } : prev);
       addNotification({
         type: "info",
         title: "Task Atualizada",
-        message: `"${selectedTask.title}" foi atualizada`,
+        message: `\"${selectedTask.title}\" foi atualizada`,
         duration: 3000,
       });
     }

@@ -1,8 +1,8 @@
 "use client" 
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import type { Task, User, Comment, SubTask } from "@/types"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -26,8 +26,10 @@ import {
   Edit3,
   Save,
   X,
+  AlertCircle,
 } from "lucide-react"
 import { Label } from "@/components/ui/label"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 interface TaskDetailModalProps {
   task: Task | null
@@ -44,13 +46,46 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate }: Task
   const [newSubtask, setNewSubtask] = useState("")
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null)
   const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
 
   if (!task) return null
 
-  console.log('DEBUG: activities no modal', task.activities)
-
   const handleSave = () => {
-    onUpdate(editedTask)
+    const activities = [...(task.activities || [])]
+    const user = users[0] // Ajuste para o usuário atual se necessário
+    const now = new Date().toISOString()
+
+    // Log alteração de data de entrega
+    if (
+      editedTask.endDate &&
+      editedTask.endDate !== task.endDate
+    ) {
+      activities.push({
+        id: Date.now().toString() + '-endDate',
+        type: 'updated',
+        description: `Data de entrega alterada de ${task.endDate ? new Date(task.endDate).toLocaleDateString('pt-BR') : 'não definida'} para ${new Date(editedTask.endDate).toLocaleDateString('pt-BR')}`,
+        user,
+        timestamp: now,
+        metadata: { field: 'endDate', from: task.endDate, to: editedTask.endDate },
+      })
+    }
+
+    // Log alteração de tempo estimado
+    if (
+      typeof editedTask.estimatedHours === 'number' &&
+      editedTask.estimatedHours !== task.estimatedHours
+    ) {
+      activities.push({
+        id: Date.now().toString() + '-estimatedHours',
+        type: 'updated',
+        description: `Tempo estimado alterado de ${task.estimatedHours ?? 0}h para ${editedTask.estimatedHours}h`,
+        user,
+        timestamp: now,
+        metadata: { field: 'estimatedHours', from: task.estimatedHours, to: editedTask.estimatedHours },
+      })
+    }
+
+    onUpdate({ ...editedTask, activities })
     setIsEditing(false)
     setEditedTask({})
   }
@@ -68,7 +103,7 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate }: Task
         author: users[0], // Current user
         createdAt: new Date().toISOString(),
       }
-      onUpdate({ comments: [...task.comments, comment] })
+      onUpdate({ comments: [...(task.comments || []), comment] })
       setNewComment("")
     }
   }
@@ -80,43 +115,70 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate }: Task
         title: newSubtask,
         completed: false,
       }
-      onUpdate({ subtasks: [...task.subtasks, subtask] })
+      const updated = [...(task.subtasks || []), subtask]
+      onUpdate({ subtasks: updated })
       setNewSubtask("")
     }
   }
 
   const toggleSubtask = (subtaskId: string) => {
-    const updatedSubtasks = task.subtasks.map((st) => (st.id === subtaskId ? { ...st, completed: !st.completed } : st))
+    const updatedSubtasks = (task.subtasks || []).map((st) =>
+      st.id === subtaskId ? { ...st, completed: !st.completed } : st
+    )
     onUpdate({ subtasks: updatedSubtasks })
   }
 
-  const completedSubtasks = task.subtasks.filter((st) => st.completed).length
-  const subtaskProgress = task.subtasks.length > 0 ? (completedSubtasks / task.subtasks.length) * 100 : 0
-
-  const currentTask = { ...task, ...editedTask }
+  const completedSubtasks = (task.subtasks || []).filter((st) => st.completed).length
+  const subtaskProgress = (task.subtasks?.length ?? 0) > 0 ? (completedSubtasks / task.subtasks.length) * 100 : 0
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSelectedFiles(e.target.files)
+    setUploadError(null)
   }
 
   const handleUploadFiles = async () => {
     if (!selectedFiles || selectedFiles.length === 0) return
+    
     setUploading(true)
-    // Aqui você vai chamar sua API de upload (ver backend abaixo)
-    // Exemplo:
-    const formData = new FormData()
-    Array.from(selectedFiles).forEach(file => formData.append("files", file))
-    // Supondo que você tenha uma rota /api/tasks/:id/attachments
-    const res = await fetch(`/api/tasks/${task.id}/attachments`, {
-      method: "POST",
-      body: formData,
-    })
-    if (res.ok) {
+    setUploadError(null)
+    
+    try {
+      const formData = new FormData()
+      Array.from(selectedFiles).forEach(file => {
+        formData.append("files", file)
+      })
+
+      // Use a variável de ambiente para a URL da API ou fallback para localhost
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+      
+      const res = await fetch(`${apiBase}/tasks/${task.id}/attachments`, {
+        method: "POST",
+        body: formData,
+        headers: {
+          // Don't set Content-Type for FormData, let the browser set it
+        }
+      })
+
+      if (!res.ok) {
+        const errorText = await res.text()
+        throw new Error(`Erro no servidor: ${res.status} ${res.statusText}. ${errorText}`)
+      }
+
       const newAttachments = await res.json()
-      onUpdate({ attachments: newAttachments }) // Atualize a task com os novos anexos
+      onUpdate({ attachments: [...(task.attachments || []), ...newAttachments] })
       setSelectedFiles(null)
+      
+      // Reset the file input
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
+      if (fileInput) {
+        fileInput.value = ''
+      }
+    } catch (error) {
+      console.error('Erro ao fazer upload dos arquivos:', error)
+      setUploadError(error instanceof Error ? error.message : 'Erro desconhecido ao fazer upload')
+    } finally {
+      setUploading(false)
     }
-    setUploading(false)
   }
 
   return (
@@ -155,6 +217,9 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate }: Task
               )}
             </div>
           </div>
+          <DialogDescription>
+            Veja, edite ou acompanhe os detalhes, subtasks, comentários e anexos desta task.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -179,13 +244,13 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate }: Task
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-bold text-lg flex items-center gap-2 text-gray-800">
                   <CheckSquare className="w-4 h-4" />
-                  Subtasks ({completedSubtasks}/{task.subtasks.length})
+                  Subtasks ({completedSubtasks}/{task.subtasks?.length || 0})
                 </h3>
                 <Progress value={subtaskProgress} className="w-24 h-2" />
               </div>
 
               <div className="space-y-2">
-                {task.subtasks.map((subtask) => (
+                {(task.subtasks || []).map((subtask) => (
                   <div key={subtask.id} className="flex items-center gap-2 p-2 rounded border bg-gray-50">
                     <Checkbox checked={subtask.completed} onCheckedChange={() => toggleSubtask(subtask.id)} />
                     <span className={subtask.completed ? "line-through text-gray-500" : ""}>{subtask.title}</span>
@@ -225,21 +290,21 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate }: Task
                 <TabsList>
                   <TabsTrigger value="comments" className="flex items-center gap-2">
                     <MessageSquare className="w-4 h-4" />
-                    Comentários ({task.comments.length})
+                    Comentários ({task.comments?.length || 0})
                   </TabsTrigger>
                   <TabsTrigger value="activity" className="flex items-center gap-2">
                     <Activity className="w-4 h-4" />
-                    Atividade
+                    Atividade ({task.activities?.length || 0})
                   </TabsTrigger>
                   <TabsTrigger value="attachments" className="flex items-center gap-2">
                     <Paperclip className="w-4 h-4" />
-                    Anexos ({task.attachments.length})
+                    Anexos ({task.attachments?.length || 0})
                   </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="comments" className="space-y-4 mt-4">
                   <div className="space-y-3">
-                    {task.comments.map((comment) => (
+                    {(task.comments || []).map((comment) => (
                       <div key={comment.id} className="flex gap-3 p-3 bg-gray-50 rounded border">
                         <Avatar className="w-8 h-8">
                           {comment.author.avatar ? (
@@ -280,17 +345,19 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate }: Task
 
                 <TabsContent value="activity" className="mt-4">
                   <div className="space-y-3">
-                    {task.activities.map((activity) => (
+                    {(task.activities || []).map((activity) => (
                       <div key={activity.id} className="flex gap-3 p-3 border-l-2 border-blue-200 bg-gray-50 rounded">
                         <Avatar className="w-6 h-6">
-                          {activity.user.avatar ? (
+                          {activity.user?.avatar ? (
                             <AvatarImage src={activity.user.avatar} alt={activity.user.name} />
                           ) : null}
                           <AvatarFallback className="text-xs">
-                            {activity.user.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
+                            {activity.user?.name
+                              ? activity.user.name
+                                  .split(" ")
+                                  .map((n) => n[0])
+                                  .join("")
+                              : "?"}
                           </AvatarFallback>
                         </Avatar>
                         <div>
@@ -301,26 +368,45 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate }: Task
                         </div>
                       </div>
                     ))}
+                    {(!task.activities || task.activities.length === 0) && (
+                      <p className="text-sm text-gray-500">Nenhuma atividade registrada.</p>
+                    )}
                   </div>
                 </TabsContent>
 
                 <TabsContent value="attachments" className="mt-4">
                   <div className="space-y-3">
                     {/* Upload de Anexos */}
-                    <div className="flex gap-2 items-center mb-2">
-                      <Input
-                        type="file"
-                        multiple
-                        onChange={handleFileChange}
-                        className="w-auto"
-                      />
-                      <Button size="sm" onClick={handleUploadFiles} disabled={uploading}>
-                        <Paperclip className="w-4 h-4 mr-1" />
-                        {uploading ? "Enviando..." : "Anexar"}
-                      </Button>
+                    <div className="space-y-2">
+                      <div className="flex gap-2 items-center">
+                        <Input
+                          type="file"
+                          multiple
+                          onChange={handleFileChange}
+                          className="w-auto"
+                          accept="*/*"
+                        />
+                        <Button 
+                          size="sm" 
+                          onClick={handleUploadFiles} 
+                          disabled={uploading || !selectedFiles}
+                        >
+                          <Paperclip className="w-4 h-4 mr-1" />
+                          {uploading ? "Enviando..." : "Anexar"}
+                        </Button>
+                      </div>
+                      
+                      {uploadError && (
+                        <Alert variant="destructive">
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertDescription>
+                            {uploadError}
+                          </AlertDescription>
+                        </Alert>
+                      )}
                     </div>
 
-                    {task.attachments.map((attachment) => (
+                    {(task.attachments || []).map((attachment) => (
                       <div key={attachment.id} className="flex items-center gap-3 p-3 border rounded bg-gray-50">
                         <Paperclip className="w-4 h-4" />
                         <div className="flex-1">
@@ -336,6 +422,10 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate }: Task
                         </Button>
                       </div>
                     ))}
+                    
+                    {(!task.attachments || task.attachments.length === 0) && (
+                      <p className="text-sm text-gray-500">Nenhum anexo encontrado.</p>
+                    )}
                   </div>
                 </TabsContent>
               </Tabs>
@@ -396,7 +486,7 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate }: Task
 
               {/* Assignee */}
               <div>
-                <label className="text-sm font-medium mb-2 block items-center gap-2">
+                <label className="text-sm font-medium mb-2 flex items-center gap-2">
                   <UserIcon className="w-4 h-4" />
                   Responsável
                 </label>
@@ -441,7 +531,7 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate }: Task
 
               {/* Due Date */}
               <div>
-                <Label htmlFor="end-date" className="text-sm font-medium mb-2 block items-center gap-2">
+                <Label htmlFor="end-date" className="text-sm font-medium mb-2 flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
                   Data de Entrega
                 </Label>
@@ -460,7 +550,7 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate }: Task
 
               {/* Time Tracking */}
               <div>
-                <label className="text-sm font-medium mb-2 block items-center gap-2">
+                <label className="text-sm font-medium mb-2 flex items-center gap-2">
                   <Clock className="w-4 h-4" />
                   Tempo
                 </label>
@@ -496,16 +586,19 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate }: Task
 
               {/* Tags */}
               <div>
-                <label className="text-sm font-medium mb-2 block items-center gap-2">
+                <label className="text-sm font-medium mb-2 flex items-center gap-2">
                   <Tag className="w-4 h-4" />
                   Tags
                 </label>
                 <div className="flex flex-wrap gap-1">
-                  {task.tags.map((tag) => (
+                  {(task.tags || []).map((tag) => (
                     <Badge key={tag} variant="outline" className="text-xs">
                       {tag}
                     </Badge>
                   ))}
+                  {(!task.tags || task.tags.length === 0) && (
+                    <span className="text-sm text-gray-500">Nenhuma tag</span>
+                  )}
                 </div>
               </div>
 
@@ -515,7 +608,7 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate }: Task
               <div className="text-xs text-gray-500 space-y-1">
                 <p>Criado: {new Date(task.createdAt).toLocaleString("pt-BR")}</p>
                 <p>Atualizado: {new Date(task.updatedAt).toLocaleString("pt-BR")}</p>
-                <p>Reporter: {task.reporter?.name}</p>
+                <p>Reporter: {task.reporter?.name || "N/A"}</p>
               </div>
             </div>
           </div>

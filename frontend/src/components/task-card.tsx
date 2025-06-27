@@ -27,8 +27,6 @@ import {
   GripVertical,
 } from "lucide-react"
 import { useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
 
 interface TaskCardProps {
   task: Task
@@ -138,26 +136,28 @@ export function TaskCard({
       <Card
         className={`cursor-pointer hover:shadow-md transition-all duration-200 ${
           isDragging ? "opacity-50 rotate-2 scale-105" : ""
-        } ${isOverdue ? "border-l-4 border-l-red-500" : ""} ${task.status === "done" ? "opacity-75" : ""}`}
+        } ${isOverdue ? "border-l-4 border-l-red-500 bg-red-50" : ""} ${task.status === "done" ? "opacity-75" : ""}`}
         onClick={onClick}
         draggable
         onDragStart={handleDragStart}
         onDragEnd={onDragEnd}
       >
-        <CardContent className="p-4">
+        {/* Faixa de alerta no topo do card */}
+        {isOverdue && (
+          <div className="flex items-center gap-2 bg-red-500 text-white text-xs font-semibold px-3 py-1 rounded-t-md">
+            <AlertTriangle className="w-3 h-3 mr-1" />
+            Atrasada
+          </div>
+        )}
+        <CardContent className="p-4 pt-3">
           {/* Drag Handle */}
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-row items-start justify-between mb-3 gap-2">
+            <div className="flex flex-wrap items-center gap-2 min-w-0">
               <GripVertical className="w-4 h-4 text-gray-400 cursor-grab active:cursor-grabbing" />
               <Badge className={getPriorityColor(task.priority)} variant="secondary">
                 {getPriorityIcon(task.priority)}
                 <span className="ml-1 capitalize">{task.priority}</span>
               </Badge>
-              {isOverdue && (
-                <Badge variant="destructive" className="text-xs">
-                  Atrasada
-                </Badge>
-              )}
             </div>
 
             <DropdownMenu>
