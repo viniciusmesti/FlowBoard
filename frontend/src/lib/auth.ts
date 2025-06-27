@@ -11,7 +11,7 @@ export const mockUsers: UserWithPassword[] = [
     email: "admin@flowboard.com",
     password: "admin123",
     role: "admin",
-    avatar: "/placeholder.svg?height=32&width=32",
+    avatar: "/placeholder.png?height=32&width=32",
   },
   {
     id: "2",
@@ -19,7 +19,7 @@ export const mockUsers: UserWithPassword[] = [
     email: "joao@flowboard.com",
     password: "123456",
     role: "developer",
-    avatar: "/placeholder.svg?height=32&width=32",
+    avatar: "/placeholder.png?height=32&width=32",
   },
   {
     id: "3",
@@ -27,7 +27,7 @@ export const mockUsers: UserWithPassword[] = [
     email: "maria@flowboard.com",
     password: "123456",
     role: "designer",
-    avatar: "/placeholder.svg?height=32&width=32",
+    avatar: "/placeholder.png?height=32&width=32",
   },
   {
     id: "4",
@@ -35,7 +35,7 @@ export const mockUsers: UserWithPassword[] = [
     email: "pedro@flowboard.com",
     password: "123456",
     role: "tester",
-    avatar: "/placeholder.svg?height=32&width=32",
+    avatar: "/placeholder.png?height=32&width=32",
   },
 ]
 

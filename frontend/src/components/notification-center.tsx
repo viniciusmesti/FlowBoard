@@ -20,14 +20,12 @@ export function NotificationCenter() {
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
+    if (!user?.id) return;
     const loadNotifications = async () => {
       setIsLoading(true)
       try {
-        // Se há usuário logado, usa o ID real, senão usa 'demo'
-        const userId = user?.id || 'demo'
-        console.log('Fetching notifications for user:', userId)
-        
-        const data = await fetchNotifications(userId)
+        console.log('Fetching notifications for user:', user.id)
+        const data = await fetchNotifications(user.id)
         if (data) {
           console.log('Notifications loaded:', data.length, 'items')
           setNotifications(data)
@@ -38,7 +36,6 @@ export function NotificationCenter() {
         setIsLoading(false)
       }
     }
-
     loadNotifications()
   }, [user])
 

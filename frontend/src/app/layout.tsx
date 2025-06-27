@@ -23,8 +23,8 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className={inter.className}>
-      <ScrumBoardProvider>
-          <AuthProvider>
+      <AuthProvider>
+        <ScrumBoardProvider>
             <NotificationProvider>
               <div className="w-full flex items-center justify-between px-6 py-3 border-b bg-white sticky top-0 z-50">
                 <span className="font-bold text-lg text-blue-700">FlowBoard</span>
@@ -33,8 +33,8 @@ export default function RootLayout({
               {children}
               <ToastContainer />
             </NotificationProvider>
-          </AuthProvider>
         </ScrumBoardProvider>
+      </AuthProvider>
       </body>
     </html>
   )

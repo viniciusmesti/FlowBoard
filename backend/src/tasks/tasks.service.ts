@@ -1,9 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Task } from './entities/task.entity';
 import { SubTask } from './entities/subtask.entity';
 import { User } from '../users/entities/user.entity';
+import { Attachment } from '../attachments/entities/attachment.entity';
+import { File as MulterFile } from 'multer';
 
 @Injectable()
 export class TasksService {
@@ -14,17 +16,13 @@ export class TasksService {
     private subtasksRepository: Repository<SubTask>,
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    @InjectRepository(Attachment)
+    private attachmentsRepository: Repository<Attachment>,
   ) {}
 
-  async create(createTaskDto: Partial<Task> & { assigneeId?: string, ownerId?: string }): Promise<Task> {
-    const { assigneeId, ownerId, ...rest } = createTaskDto;
+  async create(createTaskDto: Partial<Task> & { assigneeId?: string }): Promise<Task> {
+    const { assigneeId, ...rest } = createTaskDto;
     const task = this.tasksRepository.create(rest);
-    if (ownerId) {
-      const owner = await this.usersRepository.findOne({ where: { id: ownerId } });
-      if (owner) {
-        task.owner = owner;
-      }
-    }
     if (assigneeId) {
       const assignee = await this.usersRepository.findOne({ where: { id: assigneeId } });
       if (assignee) {
@@ -41,10 +39,15 @@ export class TasksService {
   }
 
   async findOne(id: string): Promise<Task> {
+    if (!id) {
+      throw new BadRequestException('Task ID is required');
+    }
+
     const task = await this.tasksRepository.findOne({
       where: { id },
       relations: ['owner', 'requirement', 'subtasks', 'comments', 'attachments', 'activities', 'assignee'],
     });
+    
     if (!task) {
       throw new NotFoundException(`Task with ID ${id} not found`);
     }
@@ -117,4 +120,62 @@ export class TasksService {
   async updateProgress(id: string, progress: number): Promise<Task> {
     return this.update(id, { progress });
   }
-} 
+
+  async addAttachments(taskId: string, files: MulterFile[]): Promise<Attachment[]> {
+    // Validate input
+    if (!taskId) {
+      throw new BadRequestException('Task ID is required');
+    }
+    
+    if (!files || files.length === 0) {
+      throw new BadRequestException('No files provided');
+    }
+
+    console.log(`Adding attachments to task ${taskId}`, files.map(f => f.originalname));
+
+    // Check if task exists
+    const task = await this.findOne(taskId);
+    
+    const attachments: Attachment[] = [];
+    
+    try {
+      for (const file of files) {
+        const attachment = this.attachmentsRepository.create({
+          name: file.originalname,
+          url: `/uploads/tasks/${taskId}/${file.filename}`,
+          size: file.size,
+          type: 'document',
+          task,
+        });
+        
+        const savedAttachment = await this.attachmentsRepository.save(attachment);
+        attachments.push(savedAttachment);
+      }
+      
+      console.log(`Successfully added ${attachments.length} attachments to task ${taskId}`);
+      
+      // Return all attachments for this task
+      return this.attachmentsRepository.find({ 
+        where: { task: { id: taskId } },
+        relations: ['task']
+      });
+    } catch (error) {
+      console.error(`Error adding attachments to task ${taskId}:`, error);
+      throw new BadRequestException(`Failed to add attachments: ${error.message}`);
+    }
+  }
+
+  // Helper method to check if task exists (useful for debugging)
+  async taskExists(id: string): Promise<boolean> {
+    const count = await this.tasksRepository.count({ where: { id } });
+    return count > 0;
+  }
+
+  // Helper method to get task without throwing error
+  async findOneOrNull(id: string): Promise<Task | null> {
+    return this.tasksRepository.findOne({
+      where: { id },
+      relations: ['owner', 'requirement', 'subtasks', 'comments', 'attachments', 'activities', 'assignee'],
+    });
+  }
+}

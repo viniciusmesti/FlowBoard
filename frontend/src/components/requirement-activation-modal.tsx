@@ -297,7 +297,7 @@ export function RequirementActivationModal({
               </div>
               <div>
                 <span className="text-gray-600">Responsável:</span>
-                <span className="ml-2 font-medium">{requirement.owner?.name ?? "Sem nome"}</span>
+                <span className="ml-2 font-medium">{requirement.owner.name}</span>
               </div>
               <div>
                 <span className="text-gray-600">Dependências:</span>

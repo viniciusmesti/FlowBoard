@@ -51,13 +51,13 @@ export class Requirement {
   @Column({ type: 'float', default: 0 })
   progress: number;
 
-  @OneToMany(() => Task, task => task.requirement)
+  @OneToMany(() => Task, task => task.requirement, { cascade: ['remove'], onDelete: 'CASCADE' })
   tasks: Task[];
 
-  @OneToMany(() => Milestone, milestone => milestone.requirement)
+  @OneToMany(() => Milestone, milestone => milestone.requirement, { cascade: ['remove'], onDelete: 'CASCADE' })
   milestones: Milestone[];
 
-  @OneToMany(() => RequirementComment, comment => comment.requirement)
+  @OneToMany(() => RequirementComment, comment => comment.requirement, { cascade: ['remove'], onDelete: 'CASCADE' })
   comments: RequirementComment[];
 
   @Column('simple-array')
@@ -72,7 +72,7 @@ export class Requirement {
   @Column({ default: false })
   approvalRequired: boolean;
 
-  @OneToMany(() => ApprovalRequest, approvalRequest => approvalRequest.requirement)
+  @OneToMany(() => ApprovalRequest, approvalRequest => approvalRequest.requirement, { cascade: ['remove'], onDelete: 'CASCADE' })
   approvalRequests: ApprovalRequest[];
 
   @CreateDateColumn()

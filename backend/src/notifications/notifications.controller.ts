@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query, Request } from '@nestjs/common';
+import { Controller, Get, Post, Query, Request, UseGuards } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { NotificationItemDto } from './dto/notification-item.dto';
 import { SeedDataService } from './seed-data';
@@ -11,14 +11,9 @@ export class NotificationsController {
   ) {}
 
   @Get()
-  async getAll(@Query('userId') userId: string, @Request() req): Promise<NotificationItemDto[]> {
-    // Se não há userId na query, tenta pegar do request (usuário autenticado)
-    const id = userId ?? req.user?.id;
-    
-    console.log('Notifications request:', { userId: id, hasUser: !!req.user });
-    
-    // Sempre retorna notificações (mock se não há usuário, reais se há)
-    return this.notificationsService.getNotifications(id);
+  async getAll(@Query('userId') userId: string): Promise<NotificationItemDto[]> {
+    console.log('📩 Notification fetch for userId:', userId);
+    return this.notificationsService.getNotifications(userId);
   }
 
   @Get('debug')

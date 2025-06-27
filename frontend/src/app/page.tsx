@@ -23,7 +23,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Progress } from "@/components/ui/progress"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Dialog,
@@ -96,10 +96,10 @@ export default function Dashboard() {
   const [requirementToDelete, setRequirementToDelete] = useState<Requirement | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
-  const activeRequirements = requirements.filter((req) => req.status !== "completed")
+  const activeRequirements = requirements.filter((req) => req.status === "active")
   const completedRequirements = requirements.filter((req) => req.status === "completed")
 
-  const handleAddRequirement = () => {
+  const handleAddRequirement = async () => {
     console.log("handleAddRequirement called with:", newRequirement) // Debug log
 
     if (!newRequirement.title.trim()) {
@@ -133,7 +133,7 @@ export default function Dashboard() {
 
       console.log("Creating requirement with data:", requirementData) // Debug log
 
-      const createdRequirement = addRequirement(requirementData)
+      const createdRequirement = await addRequirement(requirementData)
       console.log("Requirement created:", createdRequirement) // Debug log
 
       // Reset form
@@ -175,8 +175,8 @@ export default function Dashboard() {
     }
   }
 
-  const handleActivateRequirement = (requirementId: string, data: any) => {
-    updateRequirement(requirementId, data)
+  const handleActivateRequirement = async (requirementId: string, data: any) => {
+    await updateRequirement(requirementId, { ...data, status: "active" })
     setSelectedRequirementForActivation(null)
   }
 
@@ -346,6 +346,9 @@ export default function Dashboard() {
             {requirement.owner && (
               <div className="flex items-center gap-1">
                 <Avatar className="w-5 h-5">
+                  {requirement.owner.avatar ? (
+                    <AvatarImage src={requirement.owner.avatar} alt={requirement.owner.name} />
+                  ) : null}
                   <AvatarFallback className="text-xs">
                     {requirement.owner.name
                       .split(" ")
