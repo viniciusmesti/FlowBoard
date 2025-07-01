@@ -34,26 +34,76 @@ export function WeeklyReportModal({ requirements, projectStats, isOpen, onClose 
   const [reportType, setReportType] = useState("summary")
   const reportRef = useRef<HTMLDivElement>(null)
 
-  const reportData = useMemo(() => {
+  // Função utilitária para obter o intervalo de datas conforme o período selecionado
+  function getPeriodRange(period: string) {
     const now = new Date()
-    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+    let start: Date, end: Date
+    switch (period) {
+      case "this-week": {
+        // Começa na segunda-feira desta semana
+        const day = now.getDay() || 7
+        start = new Date(now)
+        start.setHours(0, 0, 0, 0)
+        start.setDate(now.getDate() - day + 1)
+        end = new Date(now)
+        end.setHours(23, 59, 59, 999)
+        break
+      }
+      case "last-week": {
+        // Semana passada: segunda a domingo
+        const day = now.getDay() || 7
+        end = new Date(now)
+        end.setHours(0, 0, 0, 0)
+        end.setDate(now.getDate() - day)
+        start = new Date(end)
+        start.setDate(end.getDate() - 6)
+        start.setHours(0, 0, 0, 0)
+        end.setHours(23, 59, 59, 999)
+        break
+      }
+      case "this-month": {
+        start = new Date(now.getFullYear(), now.getMonth(), 1)
+        end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+        break
+      }
+      case "last-month": {
+        start = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+        end = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999)
+        break
+      }
+      default: {
+        // Padrão: esta semana
+        const day = now.getDay() || 7
+        start = new Date(now)
+        start.setHours(0, 0, 0, 0)
+        start.setDate(now.getDate() - day + 1)
+        end = new Date(now)
+        end.setHours(23, 59, 59, 999)
+      }
+    }
+    return { start, end }
+  }
+
+  const reportData = useMemo(() => {
+    const { start, end } = getPeriodRange(reportPeriod)
+    const now = new Date()
 
     const activeRequirements = requirements.filter((req) => req.status === "active")
-    const completedThisWeek = requirements.filter(
-      (req) => req.status === "completed" && new Date(req.updatedAt) >= weekAgo,
+    const completedThisPeriod = requirements.filter(
+      (req) => req.status === "completed" && new Date(req.updatedAt) >= start && new Date(req.updatedAt) <= end,
     )
 
     const allTasks = requirements.flatMap((req) => req.tasks)
-    const completedTasksThisWeek = allTasks.filter(
-      (task) => task.status === "done" && new Date(task.updatedAt) >= weekAgo,
+    const completedTasksThisPeriod = allTasks.filter(
+      (task) => task.status === "done" && new Date(task.updatedAt) >= start && new Date(task.updatedAt) <= end,
     )
 
     const overdueTasks = allTasks.filter(
       (task) => task.endDate && new Date(task.endDate) < now && task.status !== "done",
     )
 
-    const totalEstimatedHours = completedTasksThisWeek.reduce((acc, task) => acc + (task.estimatedHours || 0), 0)
-    const totalActualHours = completedTasksThisWeek.reduce((acc, task) => acc + (task.actualHours || 0), 0)
+    const totalEstimatedHours = completedTasksThisPeriod.reduce((acc, task) => acc + (task.estimatedHours || 0), 0)
+    const totalActualHours = completedTasksThisPeriod.reduce((acc, task) => acc + (task.actualHours || 0), 0)
 
     const productivityRate = totalEstimatedHours > 0 ? (totalActualHours / totalEstimatedHours) * 100 : 0
 
@@ -73,8 +123,8 @@ export function WeeklyReportModal({ requirements, projectStats, isOpen, onClose 
 
     return {
       activeRequirements,
-      completedThisWeek,
-      completedTasksThisWeek,
+      completedThisWeek: completedThisPeriod, // renomeado para completedThisPeriod
+      completedTasksThisWeek: completedTasksThisPeriod, // renomeado para completedTasksThisPeriod
       overdueTasks,
       totalEstimatedHours,
       totalActualHours,

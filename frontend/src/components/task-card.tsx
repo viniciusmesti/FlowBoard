@@ -292,7 +292,7 @@ export function TaskCard({
             {/* Assignee */}
             {task.assignee && (
               <Avatar className="w-6 h-6">
-                <AvatarImage src={task.assignee.avatar || "/placeholder.svg"} />
+                <AvatarImage src={task.assignee.avatar || "/placeholder.png"} />
                 <AvatarFallback className="text-xs">
                   {task.assignee.name
                     .split(" ")

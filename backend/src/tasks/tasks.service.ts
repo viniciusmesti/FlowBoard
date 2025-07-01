@@ -29,7 +29,15 @@ export class TasksService {
         task.assignee = assignee;
       }
     }
-    return this.tasksRepository.save(task);
+    const savedTask = await this.tasksRepository.save(task);
+    const result = await this.tasksRepository.findOne({
+      where: { id: savedTask.id },
+      relations: ['assignee', 'owner', 'requirement'],
+    });
+    if (!result) {
+      throw new NotFoundException(`Task with ID ${savedTask.id} not found after save`);
+    }
+    return result;
   }
 
   async findAll(): Promise<Task[]> {
