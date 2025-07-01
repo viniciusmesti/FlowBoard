@@ -20,10 +20,10 @@ export class Task {
 
   @Column({
     type: 'enum',
-    enum: ['planning', 'pending-approval', 'active', 'completed', 'on-hold', 'cancelled'],
-    default: 'planning'
+    enum: ['backlog', 'todo', 'progress', 'review', 'done'],
+    default: 'backlog'
   })
-  status: 'planning' | 'pending-approval' | 'active' | 'completed' | 'on-hold' | 'cancelled';
+  status: 'backlog' | 'todo' | 'progress' | 'review' | 'done';
 
   @Column({
     type: 'enum',

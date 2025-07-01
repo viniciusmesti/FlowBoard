@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useMemo } from "react"
+import { useState, useCallback, useMemo, useEffect } from "react"
 import type { Requirement, Task, User, RequirementTemplate, ProjectStats } from "@/types"
 import { useLocalStorage } from "./useLocalStorage"
 
@@ -90,6 +90,8 @@ const createInitialRequirements = (): Requirement[] => {
   return ensureArraysInitialized([initialRequirement])
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
+
 export function useScrumBoard() {
   // Initialize filters with default values
   const [filters, setFilters] = useState({
@@ -114,150 +116,235 @@ export function useScrumBoard() {
     return ensureArraysInitialized(rawRequirements)
   }, [rawRequirements])
 
-  const addRequirement = useCallback(
-    (requirement: Omit<Requirement, "id" | "createdAt" | "updatedAt">) => {
-      console.log("Adding requirement:", requirement) // Debug log
+  // Novo estado para saber se está carregando da API
+  const [loading, setLoading] = useState(true)
+  const [apiError, setApiError] = useState<string | null>(null)
 
-      const newRequirement: Requirement = {
-        ...requirement,
-        id: Date.now().toString(),
-        progress: requirement.progress || 0,
-        tasks: requirement.tasks || [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        milestones: requirement.milestones || [],
-        comments: requirement.comments || [],
-        dependencies: requirement.dependencies || [],
-        tags: requirement.tags || [],
+  // Buscar requisitos do backend ao carregar
+  useEffect(() => {
+    async function fetchRequirements() {
+      setLoading(true)
+      setApiError(null)
+      try {
+        const res = await fetch(`${API_URL}/requirements`)
+        if (!res.ok) throw new Error("Erro ao buscar requisitos do backend")
+        const data = await res.json()
+        setRawRequirements(data)
+      } catch (err: any) {
+        setApiError("Erro ao buscar requisitos do backend. Usando dados locais.")
+      } finally {
+        setLoading(false)
       }
+    }
+    fetchRequirements()
+  }, [])
 
-      console.log("New requirement created:", newRequirement) // Debug log
-
-      setRawRequirements((prev) => {
-        const updated = [...prev, newRequirement]
-        console.log("Updated requirements:", updated) // Debug log
-        return updated
-      })
-
-      return newRequirement
+  // Funções para sincronizar com o backend
+  const addRequirement = useCallback(
+    async (requirement: Omit<Requirement, "id" | "createdAt" | "updatedAt">) => {
+      try {
+        const res = await fetch(`${API_URL}/requirements`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requirement),
+        })
+        if (!res.ok) throw new Error("Erro ao criar requisito no backend")
+        const newRequirement = await res.json()
+        setRawRequirements((prev) => [...prev, newRequirement])
+        return newRequirement
+      } catch (err) {
+        // Fallback local
+        const newRequirement: Requirement = {
+          ...requirement,
+          id: Date.now().toString(),
+          progress: requirement.progress || 0,
+          tasks: requirement.tasks || [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          milestones: requirement.milestones || [],
+          comments: requirement.comments || [],
+          dependencies: requirement.dependencies || [],
+          tags: requirement.tags || [],
+        }
+        setRawRequirements((prev) => [...prev, newRequirement])
+        return newRequirement
+      }
     },
     [setRawRequirements],
   )
 
   const updateRequirement = useCallback(
-    (id: string, updates: Partial<Requirement>) => {
-      console.log("Updating requirement:", id, updates) // Debug log
-
-      setRawRequirements((prev) =>
-        prev.map((req) =>
-          req.id === id
-            ? {
-                ...req,
-                ...updates,
-                updatedAt: new Date().toISOString(),
-              }
-            : req,
-        ),
-      )
+    async (id: string, updates: Partial<Requirement>) => {
+      try {
+        const res = await fetch(`${API_URL}/requirements/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updates),
+        })
+        if (!res.ok) throw new Error("Erro ao atualizar requisito no backend")
+        const updated = await res.json()
+        setRawRequirements((prev) => prev.map((req) => req.id === id ? updated : req))
+      } catch (err) {
+        // Fallback local
+        setRawRequirements((prev) =>
+          prev.map((req) =>
+            req.id === id
+              ? {
+                  ...req,
+                  ...updates,
+                  updatedAt: new Date().toISOString(),
+                }
+              : req,
+          ),
+        )
+      }
     },
     [setRawRequirements],
   )
 
   const deleteRequirement = useCallback(
-    (id: string) => {
-      setRawRequirements((prev) => prev.filter((req) => req.id !== id))
+    async (id: string) => {
+      try {
+        const res = await fetch(`${API_URL}/requirements/${id}`, { method: "DELETE" })
+        if (!res.ok) throw new Error("Erro ao deletar requisito no backend")
+        setRawRequirements((prev) => prev.filter((req) => req.id !== id))
+      } catch (err) {
+        // Fallback local
+        setRawRequirements((prev) => prev.filter((req) => req.id !== id))
+      }
     },
     [setRawRequirements],
   )
 
+  // Para tasks, idealmente o backend teria endpoints /tasks ou /requirements/:id/tasks
+  // Aqui, fallback local se não houver endpoint
   const addTask = useCallback(
-    (requirementId: string, task: Omit<Task, "id" | "createdAt" | "updatedAt">) => {
-      console.log("Adding task to requirement:", requirementId, task) // Debug log
-
-      const newTask: Task = {
-        ...task,
-        assignee: task.assignee ?? undefined,
-        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        // Ensure all array properties are initialized
-        comments: task.comments || [],
-        attachments: task.attachments || [],
-        activities: task.activities || [],
-        subtasks: task.subtasks || [],
-        dependencies: task.dependencies || [],
-        tags: task.tags || [],
-      }
-
-      console.log("New task created:", newTask) // Debug log
-
-      setRawRequirements((prev) => {
-        const updated = prev.map((req) =>
-          req.id === requirementId
-            ? {
-                ...req,
-                tasks: [...(req.tasks || []), newTask],
-                updatedAt: new Date().toISOString(),
-              }
-            : req,
+    async (requirementId: string, task: Omit<Task, "id" | "createdAt" | "updatedAt">) => {
+      try {
+        const res = await fetch(`${API_URL}/tasks`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...task, requirementId }),
+        })
+        if (!res.ok) throw new Error("Erro ao criar task no backend")
+        const newTask = await res.json()
+        setRawRequirements((prev) =>
+          prev.map((req) =>
+            req.id === requirementId
+              ? { ...req, tasks: [...(req.tasks || []), newTask], updatedAt: new Date().toISOString() }
+              : req,
+          ),
         )
-        console.log("Updated requirements after adding task:", updated) // Debug log
-        return updated
-      })
-
-      return newTask
+        return newTask
+      } catch (err) {
+        // Fallback local
+        const newTask: Task = {
+          ...task,
+          assignee: task.assignee ?? undefined,
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          comments: task.comments || [],
+          attachments: task.attachments || [],
+          activities: task.activities || [],
+          subtasks: task.subtasks || [],
+          dependencies: task.dependencies || [],
+          tags: task.tags || [],
+        }
+        setRawRequirements((prev) =>
+          prev.map((req) =>
+            req.id === requirementId
+              ? { ...req, tasks: [...(req.tasks || []), newTask], updatedAt: new Date().toISOString() }
+              : req,
+          ),
+        )
+        return newTask
+      }
     },
     [setRawRequirements],
   )
 
   const updateTask = useCallback(
-    (requirementId: string, taskId: string, updates: Partial<Task>) => {
-      setRawRequirements((prev) =>
-        prev.map((req) =>
-          req.id === requirementId
-            ? {
-                ...req,
-                tasks: (req.tasks || []).map((task) =>
-                  task.id === taskId
-                    ? {
-                        ...task,
-                        ...updates,
-                        updatedAt: new Date().toISOString(),
-                        // Ensure arrays remain arrays after updates
-                        comments: updates.comments ?? task.comments ?? [],
-                        attachments: updates.attachments ?? task.attachments ?? [],
-                        activities: updates.activities ?? task.activities ?? [],
-                        subtasks: updates.subtasks ?? task.subtasks ?? [],
-                        dependencies: updates.dependencies ?? task.dependencies ?? [],
-                        tags: updates.tags ?? task.tags ?? [],
-                      }
-                    : task,
-                ),
-                updatedAt: new Date().toISOString(),
-              }
-            : req,
-        ),
-      )
+    async (requirementId: string, taskId: string, updates: Partial<Task>) => {
+      try {
+        // Endpoint correto para atualizar task
+        const res = await fetch(`${API_URL}/tasks/${taskId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updates),
+        });
+        if (!res.ok) throw new Error("Erro ao atualizar task no backend");
+        const updatedTask = await res.json();
+        setRawRequirements((prev) =>
+          prev.map((req) =>
+            req.id === requirementId
+              ? {
+                  ...req,
+                  tasks: (req.tasks || []).map((task) => (task.id === taskId ? updatedTask : task)),
+                  updatedAt: new Date().toISOString(),
+                }
+              : req,
+          ),
+        );
+        // Notificação de sucesso pode ser disparada no componente que chama updateTask
+      } catch (err) {
+        // Fallback local
+        setRawRequirements((prev) =>
+          prev.map((req) =>
+            req.id === requirementId
+              ? {
+                  ...req,
+                  tasks: (req.tasks || []).map((task) =>
+                    task.id === taskId
+                      ? {
+                          ...task,
+                          ...updates,
+                          updatedAt: new Date().toISOString(),
+                          comments: updates.comments ?? task.comments ?? [],
+                          attachments: updates.attachments ?? task.attachments ?? [],
+                          activities: updates.activities ?? task.activities ?? [],
+                          subtasks: updates.subtasks ?? task.subtasks ?? [],
+                          dependencies: updates.dependencies ?? task.dependencies ?? [],
+                          tags: updates.tags ?? task.tags ?? [],
+                        }
+                      : task,
+                  ),
+                  updatedAt: new Date().toISOString(),
+                }
+              : req,
+          ),
+        );
+        // Notificação de erro pode ser disparada no componente que chama updateTask
+      }
     },
     [setRawRequirements],
-  )
+  );
 
   const deleteTask = useCallback(
-    (requirementId: string, taskId: string) => {
-      setRawRequirements((prev) =>
-        prev.map((req) =>
-          req.id === requirementId
-            ? {
-                ...req,
-                tasks: (req.tasks || []).filter((task) => task.id !== taskId),
-                updatedAt: new Date().toISOString(),
-              }
-            : req,
-        ),
-      )
+    async (requirementId: string, taskId: string) => {
+      try {
+        const res = await fetch(`${API_URL}/tasks/${taskId}`, { method: "DELETE" });
+        if (!res.ok) throw new Error("Erro ao deletar task no backend");
+        setRawRequirements((prev) =>
+          prev.map((req) =>
+            req.id === requirementId
+              ? { ...req, tasks: (req.tasks || []).filter((task) => task.id !== taskId), updatedAt: new Date().toISOString() }
+              : req,
+          ),
+        );
+      } catch (err) {
+        // Fallback local
+        setRawRequirements((prev) =>
+          prev.map((req) =>
+            req.id === requirementId
+              ? { ...req, tasks: (req.tasks || []).filter((task) => task.id !== taskId), updatedAt: new Date().toISOString() }
+              : req,
+          ),
+        );
+      }
     },
     [setRawRequirements],
-  )
+  );
 
   const moveTask = useCallback(
     (requirementId: string, taskId: string, newStatus: Task["status"]) => {
@@ -287,11 +374,11 @@ export function useScrumBoard() {
   )
 
   const createRequirementFromTemplate = useCallback(
-    (templateId: string, customData: Partial<Requirement>) => {
+    async (templateId: string, customData: Partial<Requirement>) => {
       const template = templates.find((t) => t.id === templateId)
       if (!template) return null
 
-      const newRequirement = addRequirement({
+      const newRequirement = await addRequirement({
         title: customData.title || template.name,
         description: customData.description || template.description,
         status: "planning",
@@ -308,9 +395,9 @@ export function useScrumBoard() {
       })
 
       // Add template tasks to the new requirement
-      if (template.defaultTasks) {
-        template.defaultTasks.forEach((taskTemplate) => {
-          addTask(newRequirement.id, {
+      if (template.defaultTasks && newRequirement && newRequirement.id) {
+        for (const taskTemplate of template.defaultTasks) {
+          await addTask(newRequirement.id, {
             ...taskTemplate,
             assignee: taskTemplate.assignee ? users.find((u) => u.id === taskTemplate.assignee?.id) : undefined,
             reporter: users[0],
@@ -320,7 +407,7 @@ export function useScrumBoard() {
             subtasks: [],
             dependencies: [],
           })
-        })
+        }
       }
 
       return newRequirement
@@ -385,5 +472,7 @@ export function useScrumBoard() {
     deleteTemplate,
     createRequirementFromTemplate,
     projectStats,
+    loading,
+    apiError,
   }
 }

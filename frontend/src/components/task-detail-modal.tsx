@@ -30,6 +30,7 @@ import {
 } from "lucide-react"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { v4 as uuidv4 } from 'uuid'
 
 interface TaskDetailModalProps {
   task: Task | null
@@ -61,7 +62,7 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate }: Task
       editedTask.endDate !== task.endDate
     ) {
       activities.push({
-        id: Date.now().toString() + '-endDate',
+        id: uuidv4(),
         type: 'updated',
         description: `Data de entrega alterada de ${task.endDate ? new Date(task.endDate).toLocaleDateString('pt-BR') : 'não definida'} para ${new Date(editedTask.endDate).toLocaleDateString('pt-BR')}`,
         user,
@@ -76,7 +77,7 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate }: Task
       editedTask.estimatedHours !== task.estimatedHours
     ) {
       activities.push({
-        id: Date.now().toString() + '-estimatedHours',
+        id: uuidv4(),
         type: 'updated',
         description: `Tempo estimado alterado de ${task.estimatedHours ?? 0}h para ${editedTask.estimatedHours}h`,
         user,
@@ -111,7 +112,7 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate }: Task
   const addSubtask = () => {
     if (newSubtask.trim()) {
       const subtask: SubTask = {
-        id: Date.now().toString(),
+        id: uuidv4(),
         title: newSubtask,
         completed: false,
       }

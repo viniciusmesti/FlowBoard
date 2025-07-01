@@ -46,6 +46,12 @@ const statusColumns = [
   { id: "done", title: "Concluído", color: "bg-green-400" },
 ] as const
 
+const TAG_OPTIONS = [
+  "Backend", "Frontend", "Banco de dados", "Deploy", "UI/UX", "Docker", "DevOps",
+  "API", "Testes", "Documentação", "Infraestrutura", "Mobile", "Integração",
+  "Segurança", "Performance", "Bug", "Refatoração", "Pesquisa", "Suporte", "Analytics", "Automação"
+];
+
 export default function RequirementPage() {
   const params = useParams()
   const router = useRouter()
@@ -72,7 +78,7 @@ export default function RequirementPage() {
     assignee: "",
     endDate: "",
     estimatedHours: "",
-    tags: "",
+    tags: [] as string[],
   })
 
   const usersWithLogged = users.some(u => u.id === loggedUser?.id)
@@ -138,16 +144,17 @@ export default function RequirementPage() {
     }
 
     const assignee = usersWithLogged.find((u) => u.id === newTask.assignee) || loggedUser
+    const assigneeId = assignee && assignee.id ? assignee.id : undefined;
 
     const taskData = {
       title: newTask.title,
       description: newTask.description,
       priority: newTask.priority,
       ownerId: loggedUser.id,
-      assigneeId: assignee.id,
+      ...(assigneeId ? { assigneeId } : {}),
       endDate: newTask.endDate || undefined,
       estimatedHours: newTask.estimatedHours ? Number(newTask.estimatedHours) : undefined,
-      tags: newTask.tags ? newTask.tags.split(",").map((tag) => tag.trim()) : [],
+      tags: Array.isArray(newTask.tags) ? newTask.tags : [],
       status: "backlog" as const,
       reporter: loggedUser,
       comments: [],
@@ -167,7 +174,7 @@ export default function RequirementPage() {
       assignee: "",
       endDate: "",
       estimatedHours: "",
-      tags: "",
+      tags: [],
     })
 
     // Close dialog
@@ -445,13 +452,25 @@ export default function RequirementPage() {
                       </div>
                     </div>
                     <div className="grid gap-2">
-                      <Label htmlFor="tags">Tags (separadas por vírgula)</Label>
-                      <Input
-                        id="tags"
-                        value={newTask.tags}
-                        onChange={(e) => setNewTask({ ...newTask, tags: e.target.value })}
-                        placeholder="Ex: frontend, ui/ux, authentication"
-                      />
+                      <Label htmlFor="tags">Tags</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {TAG_OPTIONS.map((tag) => (
+                          <label key={tag} className="flex items-center gap-1 text-xs cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={Array.isArray(newTask.tags) && newTask.tags.includes(tag)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setNewTask({ ...newTask, tags: [...(Array.isArray(newTask.tags) ? newTask.tags : []), tag] })
+                                } else {
+                                  setNewTask({ ...newTask, tags: (Array.isArray(newTask.tags) ? newTask.tags : []).filter(t => t !== tag) })
+                                }
+                              }}
+                            />
+                            {tag}
+                          </label>
+                        ))}
+                      </div>
                     </div>
                   </div>
                   <DialogFooter>
