@@ -27,10 +27,10 @@ export class Task {
 
   @Column({
     type: 'enum',
-    enum: ['low', 'medium', 'high'],
+    enum: ['low', 'medium', 'high', 'urgent'],
     default: 'medium'
   })
-  priority: 'low' | 'medium' | 'high';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
 
   @ManyToOne(() => User)
   @JoinColumn()

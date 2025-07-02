@@ -59,7 +59,7 @@ export default function RequirementPage() {
   const searchParams = useSearchParams()
   const taskIdFromQuery = searchParams.get('taskId')
 
-  const { requirements, users, addTask, updateTask, deleteTask, moveTask, updateRequirement, deleteRequirement } = useScrumBoardContext()
+  const { requirements, users, addTask, updateTask, deleteTask, moveTask, updateRequirement, deleteRequirement, addComment } = useScrumBoardContext()
   const { addNotification } = useNotifications()
   const { draggedTask, dragOverColumn, handleDragStart, handleDragEnd, handleDragOver, handleDragLeave, handleDrop } =
     useDragAndDrop()
@@ -230,6 +230,13 @@ export default function RequirementPage() {
         message: `\"${selectedTask.title}\" foi atualizada`,
         duration: 3000,
       });
+    }
+  };
+
+  const handleAddComment = async (content: string) => {
+    if (selectedTask && loggedUser) {
+      const comment = await addComment(requirement.id, selectedTask.id, content, loggedUser.id)
+      setSelectedTask(prev => prev ? { ...prev, comments: [...(prev.comments || []), comment] } : prev)
     }
   };
 
@@ -655,6 +662,7 @@ export default function RequirementPage() {
           isOpen={isTaskDetailOpen}
           onClose={handleCloseTaskModal}
           onUpdate={handleTaskUpdate}
+          onAddComment={handleAddComment}
         />
 
         {/* Delete Confirmation Dialog */}

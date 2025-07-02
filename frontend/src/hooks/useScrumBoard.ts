@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback, useMemo, useEffect } from "react"
-import type { Requirement, Task, User, RequirementTemplate, ProjectStats } from "@/types"
+import type { Requirement, Task, User, RequirementTemplate, ProjectStats, Comment } from "@/types"
 import { useLocalStorage } from "./useLocalStorage"
 
 // Mock users data
@@ -353,6 +353,61 @@ export function useScrumBoard() {
     [updateTask],
   )
 
+  const addComment = useCallback(
+    async (requirementId: string, taskId: string, content: string, authorId: string) => {
+      try {
+        const res = await fetch(`${API_URL}/tasks/${taskId}/comments`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content, authorId }),
+        })
+        if (!res.ok) throw new Error("Erro ao adicionar comentário no backend")
+        const newComment: Comment = await res.json()
+        setRawRequirements(prev =>
+          prev.map(req =>
+            req.id === requirementId
+              ? {
+                  ...req,
+                  tasks: (req.tasks || []).map(task =>
+                    task.id === taskId
+                      ? { ...task, comments: [...(task.comments || []), newComment] }
+                      : task,
+                  ),
+                  updatedAt: new Date().toISOString(),
+                }
+              : req,
+          ),
+        )
+        return newComment
+      } catch (err) {
+        const fallback: Comment = {
+          id: Date.now().toString(),
+          content,
+          author: users.find(u => u.id === authorId)!,
+          createdAt: new Date().toISOString(),
+        }
+        setRawRequirements(prev =>
+          prev.map(req =>
+            req.id === requirementId
+              ? {
+                  ...req,
+                  tasks: (req.tasks || []).map(task =>
+                    task.id === taskId
+                      ? { ...task, comments: [...(task.comments || []), fallback] }
+                      : task,
+                  ),
+                  updatedAt: new Date().toISOString(),
+                }
+              : req,
+          ),
+        )
+        return fallback
+      }
+    },
+    [setRawRequirements, users],
+  )
+
+
   const addTemplate = useCallback(
     (template: Omit<RequirementTemplate, "id" | "createdAt">) => {
       const newTemplate: RequirementTemplate = {
@@ -468,6 +523,7 @@ export function useScrumBoard() {
     updateTask,
     deleteTask,
     moveTask,
+    addComment,
     addTemplate,
     deleteTemplate,
     createRequirementFromTemplate,

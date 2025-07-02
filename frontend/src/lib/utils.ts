@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { v4 as uuidv4 } from "uuid"
 
 /**
  * Utility function to merge Tailwind CSS classes
@@ -99,7 +100,7 @@ export function isDueSoon(dueDate: string | Date): boolean {
  * Generate a random ID
  */
 export function generateId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2)
+  return uuidv4()
 }
 
 /**

@@ -100,7 +100,7 @@ export class TemplatesService {
     const task = this.tasksRepository.create({
       title: template.name,
       description: template.description,
-      status: 'planning',
+      status: 'backlog',
       priority: template.priority,
       owner: { id: userId } as User,
       progress: 0,

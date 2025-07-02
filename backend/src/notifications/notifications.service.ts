@@ -115,7 +115,7 @@ export class NotificationsService {
         if (!dueDate) continue;
 
         // Task atrasada
-        if (dueDate < now && task.status !== 'completed') {
+        if (dueDate < now && task.status !== 'done') {
           const daysLate = Math.ceil((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
           items.push({
             id: `overdue-${task.id}`,
@@ -129,7 +129,7 @@ export class NotificationsService {
           });
         }
         // Task com prazo próximo
-        else if (dueDate <= tomorrow && dueDate >= now && task.status !== 'completed') {
+        else if (dueDate <= tomorrow && dueDate >= now && task.status !== 'done') {
           const hoursLeft = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60));
           items.push({
             id: `due-soon-${task.id}`,
@@ -195,8 +195,8 @@ export class NotificationsService {
     const now = new Date();
     const tasks = await this.tasksRepo.find({
       where: [
-        { owner: { id: userId }, endDate: LessThan(now), status: Not('completed') },
-        { assignee: { id: userId }, endDate: LessThan(now), status: Not('completed') },
+        { owner: { id: userId }, endDate: LessThan(now), status: Not('done') },
+        { assignee: { id: userId }, endDate: LessThan(now), status: Not('done') },
       ],
       relations: ['requirement', 'owner', 'assignee'],
     });

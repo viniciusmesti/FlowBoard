@@ -32,7 +32,7 @@ export class TasksService {
     const savedTask = await this.tasksRepository.save(task);
     const result = await this.tasksRepository.findOne({
       where: { id: savedTask.id },
-      relations: ['assignee', 'owner', 'requirement'],
+      relations: ['assignee', 'owner', 'requirement', 'comments', 'comments.author'],
     });
     if (!result) {
       throw new NotFoundException(`Task with ID ${savedTask.id} not found after save`);
@@ -42,7 +42,7 @@ export class TasksService {
 
   async findAll(): Promise<Task[]> {
     return this.tasksRepository.find({
-      relations: ['owner', 'requirement', 'subtasks', 'comments', 'attachments', 'activities', 'assignee'],
+      relations: ['owner', 'requirement', 'subtasks', 'comments', 'attachments', 'activities', 'assignee', 'comments.author'],
     });
   }
 
@@ -53,7 +53,7 @@ export class TasksService {
 
     const task = await this.tasksRepository.findOne({
       where: { id },
-      relations: ['owner', 'requirement', 'subtasks', 'comments', 'attachments', 'activities', 'assignee'],
+      relations: ['owner', 'requirement', 'subtasks', 'comments', 'attachments', 'activities', 'assignee', 'comments.author'],
     });
     
     if (!task) {
@@ -183,7 +183,7 @@ export class TasksService {
   async findOneOrNull(id: string): Promise<Task | null> {
     return this.tasksRepository.findOne({
       where: { id },
-      relations: ['owner', 'requirement', 'subtasks', 'comments', 'attachments', 'activities', 'assignee'],
+      relations: ['owner', 'requirement', 'subtasks', 'comments', 'attachments', 'activities', 'assignee', 'comments.author'],
     });
   }
 }

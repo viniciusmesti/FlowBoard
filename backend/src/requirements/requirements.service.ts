@@ -25,18 +25,18 @@ export class RequirementsService {
     const saved = await this.repo.save(req);
     return this.repo.findOneOrFail({
       where: { id: saved.id },
-      relations: ['owner', 'tasks', 'comments', 'approvalRequests']
+      relations: ['owner', 'tasks', 'comments', 'comments.author', 'approvalRequests']
     });
   }
 
   findAll(): Promise<Requirement[]> {
-    return this.repo.find({ relations: ['owner', 'tasks', 'comments', 'approvalRequests'] });
+    return this.repo.find({ relations: ['owner', 'tasks', 'comments', 'comments.author', 'approvalRequests'] });
   }
 
   async findOne(id: string): Promise<Requirement> {
     const req = await this.repo.findOne({ 
       where: { id }, 
-      relations: ['owner', 'tasks', 'comments', 'approvalRequests']
+      relations: ['owner', 'tasks', 'comments', 'comments.author', 'approvalRequests']
     });
     if (!req) throw new NotFoundException(`Requirement ${id} not found`);
     return req;

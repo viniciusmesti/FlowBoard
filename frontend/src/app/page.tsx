@@ -47,6 +47,7 @@ import { WeeklyReportModal } from "@/components/weekly-report-modal"
 import { GlobalSearchModal } from "@/components/global-search-modal"
 import { NotificationCenter } from "@/components/notification-center"
 import { useAuth } from "@/contexts/AuthContext"
+import { v4 as uuidv4 } from "uuid"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -214,7 +215,7 @@ export default function Dashboard() {
       progress: 0,
       tasks: template.defaultTasks.map((task: any) => ({
         ...task,
-        id: Date.now().toString() + Math.random(),
+        id: uuidv4(),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       })),

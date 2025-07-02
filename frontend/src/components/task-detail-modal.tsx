@@ -31,6 +31,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { v4 as uuidv4 } from 'uuid'
+import { useAuth } from "@/contexts/AuthContext"
 
 interface TaskDetailModalProps {
   task: Task | null
@@ -38,9 +39,10 @@ interface TaskDetailModalProps {
   isOpen: boolean
   onClose: () => void
   onUpdate: (updates: Partial<Task>) => void
+  onAddComment: (content: string) => void
 }
 
-export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate }: TaskDetailModalProps) {
+export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate, onAddComment }: TaskDetailModalProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editedTask, setEditedTask] = useState<Partial<Task>>({})
   const [newComment, setNewComment] = useState("")
@@ -48,6 +50,7 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate }: Task
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const { user: loggedUser } = useAuth()
 
   if (!task) return null
 
@@ -96,15 +99,9 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate }: Task
     setEditedTask({})
   }
 
-  const addComment = () => {
-    if (newComment.trim()) {
-      const comment: Comment = {
-        id: Date.now().toString(),
-        content: newComment,
-        author: users[0], // Current user
-        createdAt: new Date().toISOString(),
-      }
-      onUpdate({ comments: [...(task.comments || []), comment] })
+  const addComment = async () => {
+    if (newComment.trim() && loggedUser) {
+      await onAddComment(newComment)
       setNewComment("")
     }
   }
@@ -276,7 +273,7 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate }: Task
                     placeholder="Nova subtask..."
                     value={newSubtask}
                     onChange={(e) => setNewSubtask(e.target.value)}
-                    onKeyPress={(e) => e.key === "Enter" && addSubtask()}
+                    onKeyDown={(e) => e.key === "Enter" && addSubtask()}
                   />
                   <Button size="sm" onClick={addSubtask}>
                     <Plus className="w-4 h-4" />
@@ -308,19 +305,21 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate }: Task
                     {(task.comments || []).map((comment) => (
                       <div key={comment.id} className="flex gap-3 p-3 bg-gray-50 rounded border">
                         <Avatar className="w-8 h-8">
-                          {comment.author.avatar ? (
-                            <AvatarImage src={comment.author.avatar} alt={comment.author.name} />
+                          {comment.author?.avatar ? (
+                            <AvatarImage src={comment.author.avatar} alt={comment.author?.name} />
                           ) : null}
                           <AvatarFallback>
-                            {comment.author.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
+                          {comment.author?.name
+                              ? comment.author.name
+                                  .split(" ")
+                                  .map((n) => n[0])
+                                  .join("")
+                              : ""}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium text-sm">{comment.author.name}</span>
+                          <span className="font-medium text-sm">{comment.author?.name ?? ""}</span>
                             <span className="text-xs text-gray-500">
                               {new Date(comment.createdAt).toLocaleString("pt-BR")}
                             </span>

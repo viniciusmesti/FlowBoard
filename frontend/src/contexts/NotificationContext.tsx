@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { createContext, useContext, useState, useCallback } from "react"
+import { v4 as uuidv4 } from "uuid"
 
 export interface Notification {
   id: string
@@ -28,7 +29,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [notifications, setNotifications] = useState<Notification[]>([])
 
   const addNotification = useCallback((notification: Omit<Notification, "id">) => {
-    const id = Date.now().toString() + Math.random().toString(36).substr(2, 9)
+    const id = uuidv4()
     const newNotification: Notification = {
       ...notification,
       id,

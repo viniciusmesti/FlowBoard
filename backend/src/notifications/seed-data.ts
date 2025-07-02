@@ -80,7 +80,7 @@ export class SeedDataService {
       const overdueTask = this.taskRepo.create({
         title: 'Configurar CI/CD Pipeline',
         description: 'Implementar pipeline de integração contínua',
-        status: 'active',
+        status: 'progress',
         priority: 'high',
         owner: testUser,
         requirement: savedReq,
@@ -96,7 +96,7 @@ export class SeedDataService {
       const dueSoonTask = this.taskRepo.create({
         title: 'Escrever testes unitários',
         description: 'Criar testes para componentes principais',
-        status: 'active',
+        status: 'todo',
         priority: 'medium',
         owner: testUser,
         requirement: savedReq,

@@ -7,6 +7,6 @@ export interface NotificationItemDto {
   description: string;
   requirementId: string;
   taskId?: string;
-  priority: 'high' | 'medium' | 'low';
+  priority: 'high' | 'medium' | 'low' | 'urgent';
   timestamp: string; // ISO string format
 }
