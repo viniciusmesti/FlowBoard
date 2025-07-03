@@ -45,7 +45,7 @@ import { Template } from './templates/entities/template.entity';
         Template,
       ],
       synchronize: process.env.NODE_ENV !== 'production',
-      dropSchema: true,
+      dropSchema: false,
     }),
     AuthModule,
     UsersModule,

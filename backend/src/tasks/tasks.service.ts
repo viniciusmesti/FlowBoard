@@ -6,6 +6,7 @@ import { SubTask } from './entities/subtask.entity';
 import { User } from '../users/entities/user.entity';
 import { Attachment } from '../attachments/entities/attachment.entity';
 import { File as MulterFile } from 'multer';
+import { Activity } from '../activities/entities/activity.entity';
 
 @Injectable()
 export class TasksService {
@@ -18,6 +19,8 @@ export class TasksService {
     private usersRepository: Repository<User>,
     @InjectRepository(Attachment)
     private attachmentsRepository: Repository<Attachment>,
+    @InjectRepository(Activity)
+    private activitiesRepository: Repository<Activity>,
   ) {}
 
   async create(createTaskDto: Partial<Task> & { assigneeId?: string }): Promise<Task> {
@@ -63,7 +66,7 @@ export class TasksService {
   }
 
   async update(id: string, updateTaskDto: Partial<Task> & { assigneeId?: string, ownerId?: string }): Promise<Task> {
-    const { assigneeId, ownerId, ...rest } = updateTaskDto;
+    const { assigneeId, ownerId, activities, ...rest } = updateTaskDto;
     const task = await this.findOne(id);
     Object.assign(task, rest);
     if (ownerId) {
@@ -76,6 +79,19 @@ export class TasksService {
       const assignee = await this.usersRepository.findOne({ where: { id: assigneeId } });
       if (assignee) {
         task.assignee = assignee;
+      }
+    }
+    // Salvar novas atividades, se vierem no PATCH
+    if (activities && Array.isArray(activities)) {
+      for (const act of activities) {
+        if (!act.id) { // só salva se for nova
+          const activity = this.activitiesRepository.create({
+            ...act,
+            task,
+            user: act.user?.id ? { id: act.user.id } : undefined,
+          });
+          await this.activitiesRepository.save(activity);
+        }
       }
     }
     return this.tasksRepository.save(task);

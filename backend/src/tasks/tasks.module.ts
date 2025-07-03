@@ -6,11 +6,14 @@ import { TasksService } from './tasks.service';
 import { User } from '../users/entities/user.entity';
 import { UsersModule } from '../users/users.module';
 import { Attachment } from '../attachments/entities/attachment.entity';
+import { ActivitiesModule } from '../activities/activities.module';
+import { Activity } from '../activities/entities/activity.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Task, SubTask, User, Attachment]),
-    UsersModule
+    TypeOrmModule.forFeature([Task, SubTask, User, Attachment, Activity]),
+    UsersModule,
+    ActivitiesModule
   ],
   controllers: [TasksController],
   providers: [TasksService],

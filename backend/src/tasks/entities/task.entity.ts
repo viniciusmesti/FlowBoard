@@ -55,7 +55,7 @@ export class Task {
   @Column({ type: 'float', default: 0 })
   progress: number;
 
-  @ManyToOne(() => Requirement, requirement => requirement.tasks)
+  @ManyToOne(() => Requirement, requirement => requirement.tasks, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'requirementId' })
   requirement: Requirement;
 
@@ -85,6 +85,9 @@ export class Task {
 
   @OneToMany(() => Activity, activity => activity.task)
   activities: Activity[];
+
+  @Column({ type: 'float', nullable: true })
+  actualHours?: number;
 
   @CreateDateColumn()
   createdAt: Date;

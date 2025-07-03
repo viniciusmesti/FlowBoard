@@ -40,9 +40,12 @@ interface TaskDetailModalProps {
   onClose: () => void
   onUpdate: (updates: Partial<Task>) => void
   onAddComment: (content: string) => void
+  addSubtask: (subtask: Omit<SubTask, "id">) => Promise<void>
+  updateSubtask: (subtaskId: string, updates: Partial<SubTask>) => Promise<void>
+  deleteSubtask: (subtaskId: string) => Promise<void>
 }
 
-export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate, onAddComment }: TaskDetailModalProps) {
+export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate, onAddComment, addSubtask, updateSubtask, deleteSubtask }: TaskDetailModalProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editedTask, setEditedTask] = useState<Partial<Task>>({})
   const [newComment, setNewComment] = useState("")
@@ -65,7 +68,6 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate, onAddC
       editedTask.endDate !== task.endDate
     ) {
       activities.push({
-        id: uuidv4(),
         type: 'updated',
         description: `Data de entrega alterada de ${task.endDate ? new Date(task.endDate).toLocaleDateString('pt-BR') : 'não definida'} para ${new Date(editedTask.endDate).toLocaleDateString('pt-BR')}`,
         user,
@@ -80,7 +82,6 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate, onAddC
       editedTask.estimatedHours !== task.estimatedHours
     ) {
       activities.push({
-        id: uuidv4(),
         type: 'updated',
         description: `Tempo estimado alterado de ${task.estimatedHours ?? 0}h para ${editedTask.estimatedHours}h`,
         user,
@@ -106,24 +107,19 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate, onAddC
     }
   }
 
-  const addSubtask = () => {
+  const handleAddSubtask = async () => {
     if (newSubtask.trim()) {
-      const subtask: SubTask = {
-        id: uuidv4(),
-        title: newSubtask,
-        completed: false,
-      }
-      const updated = [...(task.subtasks || []), subtask]
-      onUpdate({ subtasks: updated })
+      await addSubtask({ title: newSubtask, completed: false })
       setNewSubtask("")
     }
   }
 
-  const toggleSubtask = (subtaskId: string) => {
-    const updatedSubtasks = (task.subtasks || []).map((st) =>
-      st.id === subtaskId ? { ...st, completed: !st.completed } : st
-    )
-    onUpdate({ subtasks: updatedSubtasks })
+  const handleToggleSubtask = async (subtaskId: string, completed: boolean) => {
+    await updateSubtask(subtaskId, { completed: !completed })
+  }
+
+  const handleDeleteSubtask = async (subtaskId: string) => {
+    await deleteSubtask(subtaskId)
   }
 
   const completedSubtasks = (task.subtasks || []).filter((st) => st.completed).length
@@ -250,7 +246,7 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate, onAddC
               <div className="space-y-2">
                 {(task.subtasks || []).map((subtask) => (
                   <div key={subtask.id} className="flex items-center gap-2 p-2 rounded border bg-gray-50">
-                    <Checkbox checked={subtask.completed} onCheckedChange={() => toggleSubtask(subtask.id)} />
+                    <Checkbox checked={subtask.completed} onCheckedChange={() => handleToggleSubtask(subtask.id, subtask.completed)} />
                     <span className={subtask.completed ? "line-through text-gray-500" : ""}>{subtask.title}</span>
                     {subtask.assignee && (
                       <Avatar className="w-5 h-5 ml-auto">
@@ -273,9 +269,9 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate, onAddC
                     placeholder="Nova subtask..."
                     value={newSubtask}
                     onChange={(e) => setNewSubtask(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && addSubtask()}
+                    onKeyDown={(e) => e.key === "Enter" && handleAddSubtask()}
                   />
-                  <Button size="sm" onClick={addSubtask}>
+                  <Button size="sm" onClick={handleAddSubtask}>
                     <Plus className="w-4 h-4" />
                   </Button>
                 </div>

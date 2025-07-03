@@ -16,6 +16,6 @@ export class SubTask {
   @ManyToOne(() => User, { nullable: true })
   assignee?: User;
 
-  @ManyToOne(() => Task, task => task.subtasks)
+  @ManyToOne(() => Task, task => task.subtasks, { onDelete: 'CASCADE' })
   task: Task;
 } 
