@@ -25,18 +25,56 @@ export class RequirementsService {
     const saved = await this.repo.save(req);
     return this.repo.findOneOrFail({
       where: { id: saved.id },
-      relations: ['owner', 'tasks', 'comments', 'comments.author', 'approvalRequests']
+      relations: [
+        'owner',
+        'tasks',
+        'tasks.subtasks',
+        'tasks.comments',
+        'tasks.comments.author',
+        'tasks.attachments',
+        'tasks.activities',
+        'tasks.assignee',
+        'comments',
+        'comments.author',
+        'approvalRequests'
+      ]
     });
   }
 
   findAll(): Promise<Requirement[]> {
-    return this.repo.find({ relations: ['owner', 'tasks', 'comments', 'comments.author', 'approvalRequests'] });
+    return this.repo.find({
+      relations: [
+        'owner',
+        'tasks',
+        'tasks.subtasks',
+        'tasks.comments',
+        'tasks.comments.author',
+        'tasks.attachments',
+        'tasks.activities',
+        'tasks.assignee',
+        'comments',
+        'comments.author',
+        'approvalRequests'
+      ]
+    });
   }
 
   async findOne(id: string): Promise<Requirement> {
     const req = await this.repo.findOne({ 
       where: { id }, 
-      relations: ['owner', 'tasks', 'comments', 'comments.author', 'approvalRequests']
+      relations: [
+        'owner',
+        'tasks',
+        'tasks.subtasks',
+        'tasks.comments',
+        'tasks.comments.author',
+        'tasks.attachments',
+        'tasks.activities',
+        'tasks.assignee',
+        'comments',
+        'comments.author',
+        'approvalRequests'
+      ]
     });
     if (!req) throw new NotFoundException(`Requirement ${id} not found`);
     return req;

@@ -23,7 +23,7 @@ export interface User {
   }
   
   export interface Activity {
-    id: string
+    id?: string
     type: "created" | "updated" | "moved" | "commented" | "assigned"
     description: string
     user: User

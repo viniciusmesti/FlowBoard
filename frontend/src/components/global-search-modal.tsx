@@ -86,7 +86,7 @@ export function GlobalSearchModal({ requirements, users, isOpen, onClose }: Glob
             status: task.status,
             assignee: task.assignee,
             tags: task.tags,
-            dueDate: task.dueDate,
+            dueDate: task.endDate,
             matchedText: taskTitleMatch ? task.title : taskDescMatch ? task.description : task.tags.join(", "),
           })
         }

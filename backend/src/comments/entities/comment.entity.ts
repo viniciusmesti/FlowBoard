@@ -13,7 +13,7 @@ export class Comment {
   @ManyToOne(() => User)
   author: User;
 
-  @ManyToOne(() => Task, task => task.comments)
+  @ManyToOne(() => Task, task => task.comments, { onDelete: 'CASCADE' })
   task: Task;
 
   @CreateDateColumn()

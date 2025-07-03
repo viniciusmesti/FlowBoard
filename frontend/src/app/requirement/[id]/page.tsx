@@ -56,10 +56,10 @@ export default function RequirementPage() {
   const params = useParams()
   const router = useRouter()
   const requirementId = params.id as string
-  const searchParams = useSearchParams()
+  const searchParams = useSearchParams() 
   const taskIdFromQuery = searchParams.get('taskId')
 
-  const { requirements, users, addTask, updateTask, deleteTask, moveTask, updateRequirement, deleteRequirement, addComment } = useScrumBoardContext()
+  const { requirements, users, addTask, updateTask, deleteTask, moveTask, updateRequirement, deleteRequirement, addComment, addSubtask, updateSubtask, deleteSubtask } = useScrumBoardContext()
   const { addNotification } = useNotifications()
   const { draggedTask, dragOverColumn, handleDragStart, handleDragEnd, handleDragOver, handleDragLeave, handleDrop } =
     useDragAndDrop()
@@ -186,7 +186,7 @@ export default function RequirementPage() {
     setIsTaskDetailOpen(true)
   }
 
-  const handleTaskUpdate = (updates: Partial<Task>) => {
+  const handleTaskUpdate = async (updates: Partial<Task>) => {
     if (selectedTask) {
       let description = "";
       if (updates.status && updates.status !== selectedTask.status) {
@@ -204,16 +204,17 @@ export default function RequirementPage() {
       if (updates.description && updates.description !== selectedTask.description) {
         description += `Descrição alterada. `;
       }
-      if (typeof updates.actualHours === "number" && updates.actualHours !== selectedTask.actualHours) {
-        description += `Horas gastas registradas: ${updates.actualHours}h. `;
+      if (typeof updates.estimatedHours === "number" && updates.estimatedHours !== selectedTask.estimatedHours) {
+        description += `Tempo estimado alterado de ${selectedTask.estimatedHours ?? 0}h para ${updates.estimatedHours}h. `;
       }
-      // Mesclar activities vindas do modal com as locais
+      if (typeof updates.actualHours === "number" && updates.actualHours !== selectedTask.actualHours) {
+        description += `Tempo gasto alterado de ${selectedTask.actualHours ?? 0}h para ${updates.actualHours}h. `;
+      }
       let activities = updates.activities ?? selectedTask.activities ?? [];
       if (description && loggedUser) {
         activities = [
           ...activities,
           {
-            id: uuidv4(),
             type: "updated" as const,
             user: loggedUser,
             description: description.trim(),
@@ -221,9 +222,10 @@ export default function RequirementPage() {
           },
         ];
       }
-      updateTask(requirement.id, selectedTask.id, { ...updates, activities });
-      // Atualiza o selectedTask local imediatamente
-      setSelectedTask(prev => prev ? { ...prev, ...updates, activities } : prev);
+      const updatedTask = await updateTask(requirement.id, selectedTask.id, { ...updates, activities });
+      if (updatedTask) {
+        setSelectedTask(updatedTask);
+      }
       addNotification({
         type: "info",
         title: "Task Atualizada",
@@ -566,7 +568,6 @@ export default function RequirementPage() {
                       onUpdateTask={(updates) => {
                         if (updates.status === "done" && loggedUser) {
                           const newActivity = {
-                            id: uuidv4(),
                             type: 'moved' as const,
                             user: loggedUser,
                             description: `Task concluída por ${loggedUser.name}`,
@@ -663,6 +664,24 @@ export default function RequirementPage() {
           onClose={handleCloseTaskModal}
           onUpdate={handleTaskUpdate}
           onAddComment={handleAddComment}
+          addSubtask={async (subtask) => {
+            if (requirement && selectedTask) {
+              const updatedTask = await addSubtask(requirement.id, selectedTask.id, subtask)
+              setSelectedTask(updatedTask || null)
+            }
+          }}
+          updateSubtask={async (subtaskId, updates) => {
+            if (requirement && selectedTask) {
+              const updatedTask = await updateSubtask(requirement.id, selectedTask.id, subtaskId, updates)
+              setSelectedTask(updatedTask || null)
+            }
+          }}
+          deleteSubtask={async (subtaskId) => {
+            if (requirement && selectedTask) {
+              const updatedTask = await deleteSubtask(requirement.id, selectedTask.id, subtaskId)
+              setSelectedTask(updatedTask || null)
+            }
+          }}
         />
 
         {/* Delete Confirmation Dialog */}

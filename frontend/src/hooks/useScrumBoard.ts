@@ -1,34 +1,34 @@
 "use client"
 
 import { useState, useCallback, useMemo, useEffect } from "react"
-import type { Requirement, Task, User, RequirementTemplate, ProjectStats, Comment } from "@/types"
+import type { Requirement, Task, User, RequirementTemplate, ProjectStats, Comment, SubTask } from "@/types"
 import { useLocalStorage } from "./useLocalStorage"
 
 // Mock users data
 const mockUsers: User[] = [
   {
-    id: "1",
+    id: "f437b450-5307-4f7a-a73b-27d80dc8526f",
     name: "João Silva",
     email: "joao@empresa.com",
     role: "admin",
     avatar: "/placeholder.png?height=32&width=32",
   },
   {
-    id: "2",
+    id: "b0857d42-5545-4648-9a1c-6d1ae6375156",
     name: "Maria Santos",
     email: "maria@empresa.com",
     role: "developer",
     avatar: "/placeholder.png?height=32&width=32",
   },
   {
-    id: "3",
+    id: "2b4236c7-a7f0-4072-9f78-75eeee833697",
     name: "Pedro Costa",
     email: "pedro@empresa.com",
     role: "developer",
     avatar: "/placeholder.png?height=32&width=32",
   },
   {
-    id: "4",
+    id: "dbb35866-bd7a-4a04-a05c-ca26fcead785",
     name: "Ana Oliveira",
     email: "ana@empresa.com",
     role: "designer",
@@ -286,35 +286,38 @@ export function useScrumBoard() {
               : req,
           ),
         );
-        // Notificação de sucesso pode ser disparada no componente que chama updateTask
+        return updatedTask;
       } catch (err) {
         // Fallback local
+        let updatedTask: Task | undefined = undefined;
         setRawRequirements((prev) =>
           prev.map((req) =>
             req.id === requirementId
               ? {
                   ...req,
-                  tasks: (req.tasks || []).map((task) =>
-                    task.id === taskId
-                      ? {
-                          ...task,
-                          ...updates,
-                          updatedAt: new Date().toISOString(),
-                          comments: updates.comments ?? task.comments ?? [],
-                          attachments: updates.attachments ?? task.attachments ?? [],
-                          activities: updates.activities ?? task.activities ?? [],
-                          subtasks: updates.subtasks ?? task.subtasks ?? [],
-                          dependencies: updates.dependencies ?? task.dependencies ?? [],
-                          tags: updates.tags ?? task.tags ?? [],
-                        }
-                      : task,
-                  ),
+                  tasks: (req.tasks || []).map((task) => {
+                    if (task.id === taskId) {
+                      updatedTask = {
+                        ...task,
+                        ...updates,
+                        updatedAt: new Date().toISOString(),
+                        comments: updates.comments ?? task.comments ?? [],
+                        attachments: updates.attachments ?? task.attachments ?? [],
+                        activities: updates.activities ?? task.activities ?? [],
+                        subtasks: updates.subtasks ?? task.subtasks ?? [],
+                        dependencies: updates.dependencies ?? task.dependencies ?? [],
+                        tags: updates.tags ?? task.tags ?? [],
+                      };
+                      return updatedTask;
+                    }
+                    return task;
+                  }),
                   updatedAt: new Date().toISOString(),
                 }
               : req,
           ),
         );
-        // Notificação de erro pode ser disparada no componente que chama updateTask
+        return updatedTask;
       }
     },
     [setRawRequirements],
@@ -510,6 +513,148 @@ export function useScrumBoard() {
     }
   }, [requirements])
 
+  // --- SUBTASKS ---
+  const addSubtask = useCallback(
+    async (requirementId: string, taskId: string, subtask: Omit<SubTask, "id">) => {
+      try {
+        const res = await fetch(`${API_URL}/tasks/${taskId}/subtasks`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(subtask),
+        })
+        if (!res.ok) throw new Error("Erro ao adicionar subtask no backend")
+        const updatedTask: Task = await res.json()
+        setRawRequirements((prev) =>
+          prev.map((req) =>
+            req.id === requirementId
+              ? {
+                  ...req,
+                  tasks: (req.tasks || []).map((task) => (task.id === taskId ? updatedTask : task)),
+                  updatedAt: new Date().toISOString(),
+                }
+              : req,
+          ),
+        )
+        return updatedTask
+      } catch (err) {
+        // Fallback local
+        setRawRequirements((prev) =>
+          prev.map((req) =>
+            req.id === requirementId
+              ? {
+                  ...req,
+                  tasks: (req.tasks || []).map((task) =>
+                    task.id === taskId
+                      ? {
+                          ...task,
+                          subtasks: [...(task.subtasks || []), { ...subtask, id: Date.now().toString() }],
+                        }
+                      : task,
+                  ),
+                  updatedAt: new Date().toISOString(),
+                }
+              : req,
+          ),
+        )
+      }
+    },
+    [setRawRequirements],
+  )
+
+  const updateSubtask = useCallback(
+    async (requirementId: string, taskId: string, subtaskId: string, updates: Partial<SubTask>) => {
+      try {
+        const res = await fetch(`${API_URL}/tasks/${taskId}/subtasks/${subtaskId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updates),
+        })
+        if (!res.ok) throw new Error("Erro ao atualizar subtask no backend")
+        const updatedTask: Task = await res.json()
+        setRawRequirements((prev) =>
+          prev.map((req) =>
+            req.id === requirementId
+              ? {
+                  ...req,
+                  tasks: (req.tasks || []).map((task) => (task.id === taskId ? updatedTask : task)),
+                  updatedAt: new Date().toISOString(),
+                }
+              : req,
+          ),
+        )
+        return updatedTask
+      } catch (err) {
+        // Fallback local
+        setRawRequirements((prev) =>
+          prev.map((req) =>
+            req.id === requirementId
+              ? {
+                  ...req,
+                  tasks: (req.tasks || []).map((task) =>
+                    task.id === taskId
+                      ? {
+                          ...task,
+                          subtasks: (task.subtasks || []).map((st) =>
+                            st.id === subtaskId ? { ...st, ...updates } : st
+                          ),
+                        }
+                      : task,
+                  ),
+                  updatedAt: new Date().toISOString(),
+                }
+              : req,
+          ),
+        )
+      }
+    },
+    [setRawRequirements],
+  )
+
+  const deleteSubtask = useCallback(
+    async (requirementId: string, taskId: string, subtaskId: string) => {
+      try {
+        const res = await fetch(`${API_URL}/tasks/${taskId}/subtasks/${subtaskId}`, {
+          method: "DELETE",
+        })
+        if (!res.ok) throw new Error("Erro ao remover subtask no backend")
+        const updatedTask: Task = await res.json()
+        setRawRequirements((prev) =>
+          prev.map((req) =>
+            req.id === requirementId
+              ? {
+                  ...req,
+                  tasks: (req.tasks || []).map((task) => (task.id === taskId ? updatedTask : task)),
+                  updatedAt: new Date().toISOString(),
+                }
+              : req,
+          ),
+        )
+        return updatedTask
+      } catch (err) {
+        // Fallback local
+        setRawRequirements((prev) =>
+          prev.map((req) =>
+            req.id === requirementId
+              ? {
+                  ...req,
+                  tasks: (req.tasks || []).map((task) =>
+                    task.id === taskId
+                      ? {
+                          ...task,
+                          subtasks: (task.subtasks || []).filter((st) => st.id !== subtaskId),
+                        }
+                      : task,
+                  ),
+                  updatedAt: new Date().toISOString(),
+                }
+              : req,
+          ),
+        )
+      }
+    },
+    [setRawRequirements],
+  )
+
   return {
     requirements: filteredRequirements,
     templates,
@@ -530,5 +675,8 @@ export function useScrumBoard() {
     projectStats,
     loading,
     apiError,
+    addSubtask,
+    updateSubtask,
+    deleteSubtask,
   }
 }
