@@ -58,36 +58,82 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate, onAddC
   if (!task) return null
 
   const handleSave = () => {
+    if (!loggedUser) {
+      // Não registra atividade se não houver usuário logado
+      onUpdate({ ...editedTask })
+      setIsEditing(false)
+      setEditedTask({})
+      return
+    }
     const activities = [...(task.activities || [])]
-    const user = users[0] // Ajuste para o usuário atual se necessário
+    const user = loggedUser // Corrigido para o usuário logado
     const now = new Date().toISOString()
 
-    // Log alteração de data de entrega
-    if (
-      editedTask.endDate &&
-      editedTask.endDate !== task.endDate
-    ) {
+    // Helper para adicionar atividade
+    const addActivity = (description: string, metadata: Record<string, any> = {}) => {
       activities.push({
+        id: uuidv4(),
         type: 'updated',
-        description: `Data de entrega alterada de ${task.endDate ? new Date(task.endDate).toLocaleDateString('pt-BR') : 'não definida'} para ${new Date(editedTask.endDate).toLocaleDateString('pt-BR')}`,
+        description,
         user,
         timestamp: now,
-        metadata: { field: 'endDate', from: task.endDate, to: editedTask.endDate },
+        metadata,
       })
     }
 
-    // Log alteração de tempo estimado
+    // Checa cada campo editado
+    if (
+      editedTask.title !== undefined &&
+      editedTask.title !== task.title
+    ) {
+      addActivity(`Título alterado de "${task.title}" para "${editedTask.title}"`, { field: 'title', from: task.title, to: editedTask.title })
+    }
+    if (
+      editedTask.description !== undefined &&
+      editedTask.description !== task.description
+    ) {
+      addActivity('Descrição alterada.', { field: 'description', from: task.description, to: editedTask.description })
+    }
+    if (
+      editedTask.status !== undefined &&
+      editedTask.status !== task.status
+    ) {
+      addActivity(`Status alterado de "${task.status}" para "${editedTask.status}"`, { field: 'status', from: task.status, to: editedTask.status })
+    }
+    if (
+      editedTask.priority !== undefined &&
+      editedTask.priority !== task.priority
+    ) {
+      addActivity(`Prioridade alterada de "${task.priority}" para "${editedTask.priority}"`, { field: 'priority', from: task.priority, to: editedTask.priority })
+    }
+    if (
+      editedTask.assignee !== undefined &&
+      editedTask.assignee?.id !== task.assignee?.id
+    ) {
+      addActivity(`Responsável alterado de "${task.assignee?.name || 'N/A'}" para "${editedTask.assignee?.name || 'N/A'}"`, { field: 'assignee', from: task.assignee?.id, to: editedTask.assignee?.id })
+    }
+    if (
+      editedTask.endDate !== undefined &&
+      editedTask.endDate !== task.endDate
+    ) {
+      addActivity(`Data de entrega alterada de ${task.endDate ? new Date(task.endDate).toLocaleDateString('pt-BR') : 'não definida'} para ${editedTask.endDate ? new Date(editedTask.endDate).toLocaleDateString('pt-BR') : 'não definida'}`, { field: 'endDate', from: task.endDate, to: editedTask.endDate })
+    }
     if (
       typeof editedTask.estimatedHours === 'number' &&
       editedTask.estimatedHours !== task.estimatedHours
     ) {
-      activities.push({
-        type: 'updated',
-        description: `Tempo estimado alterado de ${task.estimatedHours ?? 0}h para ${editedTask.estimatedHours}h`,
-        user,
-        timestamp: now,
-        metadata: { field: 'estimatedHours', from: task.estimatedHours, to: editedTask.estimatedHours },
-      })
+      addActivity(`Tempo estimado alterado de ${task.estimatedHours ?? 0}h para ${editedTask.estimatedHours}h`, { field: 'estimatedHours', from: task.estimatedHours, to: editedTask.estimatedHours })
+    }
+    if (
+      typeof editedTask.actualHours === 'number' &&
+      editedTask.actualHours !== task.actualHours
+    ) {
+      addActivity(`Tempo gasto alterado de ${task.actualHours ?? 0}h para ${editedTask.actualHours}h`, { field: 'actualHours', from: task.actualHours, to: editedTask.actualHours })
+    }
+
+    // Se nenhuma atividade específica foi criada, mas houve edição, cria uma genérica
+    if (activities.length === (task.activities || []).length && Object.keys(editedTask).length > 0) {
+      addActivity('Task editada.')
     }
 
     onUpdate({ ...editedTask, activities })

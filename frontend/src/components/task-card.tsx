@@ -38,6 +38,7 @@ interface TaskCardProps {
   onDragStart?: (task: Task) => void
   onDragEnd?: () => void
   onUpdateTask?: (updates: Partial<Task>) => void
+  compact?: boolean // NOVO
 }
 
 export function TaskCard({
@@ -50,6 +51,7 @@ export function TaskCard({
   onDragStart,
   onDragEnd,
   onUpdateTask,
+  compact = false, // NOVO
 }: TaskCardProps) {
   const { addNotification } = useNotifications()
   const [showHoursModal, setShowHoursModal] = useState(false)
@@ -130,6 +132,40 @@ export function TaskCard({
     }
     e.dataTransfer.effectAllowed = "move"
     e.dataTransfer.setData("text/plain", task.id)
+  }
+
+  if (compact) {
+    return (
+      <Card
+        className={`cursor-pointer transition-all duration-200 bg-white border border-green-200 rounded-md shadow-sm px-3 py-2 flex items-center gap-2 ${task.status === "done" ? "opacity-80" : ""}`}
+        onClick={onClick}
+        draggable
+        onDragStart={handleDragStart}
+        onDragEnd={onDragEnd}
+      >
+        <Badge className={getPriorityColor(task.priority)} variant="secondary">
+          {getPriorityIcon(task.priority)}
+          <span className="ml-1 capitalize">{task.priority}</span>
+        </Badge>
+        <h4 className={`font-medium text-xs truncate flex-1 ${task.status === "done" ? "line-through" : ""}`}>{task.title}</h4>
+        {task.assignee && (
+          <Avatar className="w-6 h-6">
+            {task.assignee.avatar ? (
+              <AvatarImage src={task.assignee.avatar} alt={task.assignee.name} />
+            ) : null}
+            <AvatarFallback className="text-xs">
+              {task.assignee.name
+                .split(" ")
+                .map((n) => n[0])
+                .join("")}
+            </AvatarFallback>
+          </Avatar>
+        )}
+        <Badge className={getStatusColor(task.status)} variant="outline">
+          {task.status}
+        </Badge>
+      </Card>
+    )
   }
 
   return (
