@@ -2,7 +2,7 @@
  // statusColumns
 import { useState, useEffect } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
-import { ArrowLeft, Plus, Settings, Users, Clock, MoreHorizontal, Trash2 } from "lucide-react"
+import { ArrowLeft, Plus, Settings, Users, Clock, MoreHorizontal, Trash2, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
@@ -70,6 +70,7 @@ export default function RequirementPage() {
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false)
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [showDoneTasks, setShowDoneTasks] = useState(true)
 
   const [newTask, setNewTask] = useState({
     title: "",
@@ -211,6 +212,9 @@ export default function RequirementPage() {
         description += `Tempo gasto alterado de ${selectedTask.actualHours ?? 0}h para ${updates.actualHours}h. `;
       }
       let activities = updates.activities ?? selectedTask.activities ?? [];
+      if (!description && Object.keys(updates).length > 0 && loggedUser) {
+        description = "Task editada.";
+      }
       if (description && loggedUser) {
         activities = [
           ...activities,
@@ -522,6 +526,78 @@ export default function RequirementPage() {
             const columnTasks = requirement.tasks.filter((task) => task.status === column.id)
             const isDragOver = dragOverColumn === column.id
 
+            // Lógica para coluna 'done' (concluído)
+            if (column.id === "done") {
+              return (
+                <div
+                  key={column.id}
+                  className={`bg-white rounded-lg p-4 shadow-sm transition-all duration-200 ${
+                    isDragOver ? "ring-2 ring-blue-400 bg-blue-50" : ""
+                  }`}
+                  onDragOver={(e) => handleDragOver(e, column.id)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, column.id as Task["status"], handleMoveTask)}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-3 h-3 rounded-full ${column.color}`}></div>
+                      <h3 className="font-semibold text-gray-700">{column.title}</h3>
+                    </div>
+                    <Badge variant="secondary" className="text-xs">
+                      {columnTasks.length}
+                    </Badge>
+                  </div>
+                  <div className="flex flex-col gap-2 pb-2">
+                    {columnTasks.length === 0 && (
+                      <span className="text-sm text-gray-400">Nenhuma task concluída</span>
+                    )}
+                    {columnTasks.map((task) => (
+                      <TaskCard
+                        key={task.id}
+                        task={task}
+                        compact={true}
+                        onStatusChange={(newStatus) => handleMoveTask(task.id, newStatus)}
+                        onEdit={() => {
+                          setSelectedTask(task)
+                          setIsTaskDetailOpen(true)
+                        }}
+                        onDelete={() => {
+                          deleteTask(requirement.id, task.id)
+                          addNotification({
+                            type: "info",
+                            title: "Task Removida",
+                            message: `"${task.title}" foi removida`,
+                            duration: 3000,
+                          })
+                        }}
+                        onClick={() => handleTaskClick(task)}
+                        isDragging={draggedTask?.id === task.id}
+                        onDragStart={handleDragStart}
+                        onDragEnd={handleDragEnd}
+                        onUpdateTask={(updates) => {
+                          if (updates.status === "done" && loggedUser) {
+                            const newActivity = {
+                              type: 'moved' as const,
+                              user: loggedUser,
+                              description: `Task concluída por ${loggedUser.name}`,
+                              timestamp: new Date().toISOString(),
+                            }
+                            const newActivities = [...(task.activities || []), newActivity]
+                            updateTask(requirement.id, task.id, {
+                              ...updates,
+                              activities: newActivities,
+                            })
+                          } else {
+                            updateTask(requirement.id, task.id, updates)
+                          }
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )
+            }
+            // Outras colunas (sem colapso)
             return (
               <div
                 key={column.id}
@@ -541,7 +617,6 @@ export default function RequirementPage() {
                     {columnTasks.length}
                   </Badge>
                 </div>
-
                 <div className="space-y-3 min-h-[400px]">
                   {columnTasks.map((task) => (
                     <TaskCard
@@ -574,7 +649,6 @@ export default function RequirementPage() {
                             timestamp: new Date().toISOString(),
                           }
                           const newActivities = [...(task.activities || []), newActivity]
-                          console.log('DEBUG: Salvando activities ao concluir', newActivities)
                           updateTask(requirement.id, task.id, {
                             ...updates,
                             activities: newActivities,
@@ -585,7 +659,6 @@ export default function RequirementPage() {
                       }}
                     />
                   ))}
-
                   {columnTasks.length === 0 && (
                     <div
                       className={`text-center py-8 border-2 border-dashed rounded-lg transition-colors ${

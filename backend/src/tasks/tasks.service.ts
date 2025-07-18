@@ -56,7 +56,7 @@ export class TasksService {
 
     const task = await this.tasksRepository.findOne({
       where: { id },
-      relations: ['owner', 'requirement', 'subtasks', 'comments', 'attachments', 'activities', 'assignee', 'comments.author'],
+      relations: ['owner', 'requirement', 'subtasks', 'comments', 'attachments', 'activities', 'activities.user', 'assignee', 'comments.author'],
     });
     
     if (!task) {
@@ -81,20 +81,41 @@ export class TasksService {
         task.assignee = assignee;
       }
     }
-    // Salvar novas atividades, se vierem no PATCH
+    // Sincronizar atividades
     if (activities && Array.isArray(activities)) {
+      // Buscar atividades atuais da task
+      const currentActivities = await this.activitiesRepository.find({ where: { task: { id } } });
+      const activitiesToKeep: Activity[] = [];
       for (const act of activities) {
-        if (!act.id) { // só salva se for nova
+        if (!act.id) {
+          // Nova atividade
           const activity = this.activitiesRepository.create({
             ...act,
             task,
             user: act.user?.id ? { id: act.user.id } : undefined,
           });
           await this.activitiesRepository.save(activity);
+          activitiesToKeep.push(activity);
+        } else {
+          // Atualizar atividade existente
+          const existing = currentActivities.find(a => a.id === act.id);
+          if (existing) {
+            Object.assign(existing, act);
+            await this.activitiesRepository.save(existing);
+            activitiesToKeep.push(existing);
+          }
         }
       }
+      // Remover atividades que não estão mais presentes
+      const toRemove = currentActivities.filter(a => !activities.find(act => act.id === a.id));
+      if (toRemove.length > 0) {
+        await this.activitiesRepository.remove(toRemove);
+      }
+      // Atualizar referência na task
+      task.activities = activitiesToKeep;
     }
-    return this.tasksRepository.save(task);
+    await this.tasksRepository.save(task);
+    return this.findOne(id);
   }
 
   async remove(id: string): Promise<void> {
