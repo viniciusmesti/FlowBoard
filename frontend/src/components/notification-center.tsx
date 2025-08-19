@@ -55,6 +55,7 @@ export function NotificationCenter() {
       case 'due-soon': return <Clock className="w-4 h-4 text-yellow-600" />
       case 'approval': return <BellRing className="w-4 h-4 text-blue-600" />
       case 'completed': return <CheckCircle className="w-4 h-4 text-green-600" />
+      case 'urgent': return <AlertTriangle className="w-4 h-4 text-red-700" />
       default: return <Bell className="w-4 h-4 text-gray-600" />
     }
   }
@@ -66,6 +67,7 @@ export function NotificationCenter() {
       case 'due-soon': return base + 'border-l-yellow-500 bg-yellow-50 hover:bg-yellow-100'
       case 'approval': return base + 'border-l-blue-500 bg-blue-50 hover:bg-blue-100'
       case 'completed': return base + 'border-l-green-500 bg-green-50 hover:bg-green-100'
+      case 'urgent': return base + 'border-l-red-600 bg-red-50 hover:bg-red-100'
       default: return base + 'border-l-gray-500 bg-gray-50 hover:bg-gray-100'
     }
   }
@@ -74,7 +76,8 @@ export function NotificationCenter() {
   const dueSoon = notifications.filter(n => n.type === 'due-soon')
   const approval = notifications.filter(n => n.type === 'approval')
   const completed = notifications.filter(n => n.type === 'completed')
-  const urgentCount = overdue.length + approval.length
+  const urgent = notifications.filter(n => n.type === 'urgent')
+  const urgentCount = overdue.length + approval.length + urgent.length
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -136,7 +139,7 @@ export function NotificationCenter() {
               {['all', 'urgent', 'upcoming', 'completed'].map(tab => (
                 <TabsContent key={tab} value={tab} className="m-0">
                   <div className="space-y-1">
-                    {(tab === 'all' ? notifications : tab === 'urgent' ? [...overdue, ...approval] : tab === 'upcoming' ? dueSoon : completed)
+                    {(tab === 'all' ? notifications : tab === 'urgent' ? [...urgent, ...overdue, ...approval] : tab === 'upcoming' ? dueSoon : completed)
                       .map(n => (
                         <Link
                           key={n.id}

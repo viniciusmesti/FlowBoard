@@ -19,7 +19,7 @@ export class Activity {
   @ManyToOne(() => User)
   user: User;
 
-  @ManyToOne(() => Task, task => task.activities)
+  @ManyToOne(() => Task, task => task.activities, { onDelete: 'CASCADE' })
   task: Task;
 
   @Column('jsonb', { nullable: true })

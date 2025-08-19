@@ -395,6 +395,7 @@ export default function RequirementPage() {
                         onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
                         placeholder="Ex: Criar tela de login"
                       />
+                      <span className="text-xs text-muted-foreground">Obrigatório. Seja claro e direto.</span>
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="task-description">Descrição</Label>
@@ -405,6 +406,7 @@ export default function RequirementPage() {
                         placeholder="Descreva a task em detalhes..."
                         rows={3}
                       />
+                      <span className="text-xs text-muted-foreground">Opcional. Inclua critérios de aceite quando possível.</span>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="grid gap-2">
@@ -436,7 +438,13 @@ export default function RequirementPage() {
                           <SelectContent>
                             {usersWithLogged.map((user) => (
                               <SelectItem key={user.id} value={user.id}>
-                                {user.name}
+                                <div className="flex items-center gap-2">
+                                  <Avatar className="h-5 w-5">
+                                    <AvatarImage src={user.avatar} alt={user.name} />
+                                    <AvatarFallback>{user.name?.[0]}</AvatarFallback>
+                                  </Avatar>
+                                  <span className="text-sm">{user.name}</span>
+                                </div>
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -452,6 +460,7 @@ export default function RequirementPage() {
                           value={newTask.endDate}
                           onChange={(e) => setNewTask({ ...newTask, endDate: e.target.value })}
                         />
+                        <span className="text-xs text-muted-foreground">Opcional. Ajuda a priorizar no quadro.</span>
                       </div>
                       <div className="grid gap-2">
                         <Label htmlFor="estimated-hours">Horas Estimadas</Label>
@@ -461,33 +470,44 @@ export default function RequirementPage() {
                           value={newTask.estimatedHours}
                           onChange={(e) => setNewTask({ ...newTask, estimatedHours: e.target.value })}
                           placeholder="Ex: 8"
+                          min={0}
+                          step={0.5}
                         />
+                        <span className="text-xs text-muted-foreground">Use números inteiros ou meia hora (ex: 1.5).</span>
                       </div>
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="tags">Tags</Label>
                       <div className="flex flex-wrap gap-2">
-                        {TAG_OPTIONS.map((tag) => (
-                          <label key={tag} className="flex items-center gap-1 text-xs cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={Array.isArray(newTask.tags) && newTask.tags.includes(tag)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setNewTask({ ...newTask, tags: [...(Array.isArray(newTask.tags) ? newTask.tags : []), tag] })
-                                } else {
-                                  setNewTask({ ...newTask, tags: (Array.isArray(newTask.tags) ? newTask.tags : []).filter(t => t !== tag) })
-                                }
+                        {TAG_OPTIONS.map((tag) => {
+                          const selected = Array.isArray(newTask.tags) && newTask.tags.includes(tag)
+                          return (
+                            <button
+                              key={tag}
+                              type="button"
+                              onClick={() => {
+                                const current = Array.isArray(newTask.tags) ? newTask.tags : []
+                                setNewTask({
+                                  ...newTask,
+                                  tags: selected ? current.filter((t) => t !== tag) : [...current, tag],
+                                })
                               }}
-                            />
-                            {tag}
-                          </label>
-                        ))}
+                              className={`px-2 py-1 rounded-full text-xs border transition-colors ${
+                                selected
+                                  ? "bg-blue-50 border-blue-300 text-blue-700"
+                                  : "bg-gray-50 hover:bg-gray-100 border-gray-200 text-gray-600"
+                              }`}
+                            >
+                              {tag}
+                            </button>
+                          )
+                        })}
                       </div>
                     </div>
                   </div>
                   <DialogFooter>
-                    <Button onClick={handleAddTask}>Criar Task</Button>
+                    <Button variant="outline" onClick={() => setIsTaskDialogOpen(false)}>Cancelar</Button>
+                    <Button onClick={handleAddTask} disabled={!newTask.title.trim()}>Criar Task</Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>

@@ -65,7 +65,7 @@ export class Task {
   @ManyToOne(() => Template, template => template.defaultTasks)
   template: Template;
 
-  @OneToMany(() => SubTask, subtask => subtask.task)
+  @OneToMany(() => SubTask, subtask => subtask.task, { onDelete: 'CASCADE' })
   subtasks: SubTask[];
 
   @Column('simple-array')
@@ -77,13 +77,13 @@ export class Task {
   @Column('simple-array', { default: '' })
   tags: string[];  
 
-  @OneToMany(() => Comment, comment => comment.task)
+  @OneToMany(() => Comment, comment => comment.task, { onDelete: 'CASCADE' })
   comments: Comment[];
 
-  @OneToMany(() => Attachment, attachment => attachment.task)
+  @OneToMany(() => Attachment, attachment => attachment.task, { onDelete: 'CASCADE' })
   attachments: Attachment[];
 
-  @OneToMany(() => Activity, activity => activity.task)
+  @OneToMany(() => Activity, activity => activity.task, { onDelete: 'CASCADE' })
   activities: Activity[];
 
   @Column({ type: 'float', nullable: true })

@@ -41,6 +41,7 @@ import { DashboardStats } from "@/components/dashboard-stats"
 import type { Requirement, RequirementTemplate } from "@/types"
 import Link from "next/link"
 import { RequirementActivationModal } from "@/components/requirement-activation-modal"
+import { RequirementDetailModal } from "@/components/requirement-detail-modal"
 import { RequirementTemplatesModal } from "@/components/requirement-templates-modal"
 import { CreateTemplateModal } from "@/components/create-template-modal"
 import { WeeklyReportModal } from "@/components/weekly-report-modal"
@@ -96,6 +97,8 @@ export default function Dashboard() {
   const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false)
   const [requirementToDelete, setRequirementToDelete] = useState<Requirement | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [detailRequirement, setDetailRequirement] = useState<Requirement | null>(null)
+  const [isDetailOpen, setIsDetailOpen] = useState(false)
 
   const activeRequirements = requirements.filter((req) => req.status === "active")
   const completedRequirements = requirements.filter((req) => req.status === "completed")
@@ -690,6 +693,18 @@ export default function Dashboard() {
           }}
           onActivate={handleActivateRequirement}
           onRequestApproval={handleRequestApproval}
+        />
+
+        <RequirementDetailModal
+          isOpen={isDetailOpen}
+          onClose={() => setIsDetailOpen(false)}
+          requirement={detailRequirement}
+          users={users}
+          onUpdate={(updates) => {
+            if (detailRequirement) {
+              updateRequirement(detailRequirement.id, updates as any)
+            }
+          }}
         />
 
         <RequirementTemplatesModal

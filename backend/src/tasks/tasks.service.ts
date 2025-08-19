@@ -8,6 +8,19 @@ import { Attachment } from '../attachments/entities/attachment.entity';
 import { File as MulterFile } from 'multer';
 import { Activity } from '../activities/entities/activity.entity';
 
+function normalizeDateOnly(dateLike?: string | Date): Date | undefined {
+  if (!dateLike) return undefined;
+  if (dateLike instanceof Date) return dateLike;
+  const s = String(dateLike);
+  // If YYYY-MM-DD, anchor to local noon
+  const m = s.match(/^\d{4}-\d{2}-\d{2}$/);
+  if (m) {
+    const [y, mo, d] = s.split('-').map(Number);
+    return new Date(y, mo - 1, d, 12, 0, 0, 0);
+  }
+  return new Date(s);
+}
+
 @Injectable()
 export class TasksService {
   constructor(
@@ -25,7 +38,11 @@ export class TasksService {
 
   async create(createTaskDto: Partial<Task> & { assigneeId?: string }): Promise<Task> {
     const { assigneeId, ...rest } = createTaskDto;
-    const task = this.tasksRepository.create(rest);
+    const task = this.tasksRepository.create({
+      ...rest,
+      startDate: normalizeDateOnly(rest.startDate as any),
+      endDate: normalizeDateOnly(rest.endDate as any),
+    });
     if (assigneeId) {
       const assignee = await this.usersRepository.findOne({ where: { id: assigneeId } });
       if (assignee) {
@@ -68,7 +85,12 @@ export class TasksService {
   async update(id: string, updateTaskDto: Partial<Task> & { assigneeId?: string, ownerId?: string }): Promise<Task> {
     const { assigneeId, ownerId, activities, ...rest } = updateTaskDto;
     const task = await this.findOne(id);
-    Object.assign(task, rest);
+    const patch: any = {
+      ...rest,
+    };
+    if (rest.startDate) patch.startDate = normalizeDateOnly(rest.startDate as any);
+    if (rest.endDate) patch.endDate = normalizeDateOnly(rest.endDate as any);
+    Object.assign(task, patch);
     if (ownerId) {
       const owner = await this.usersRepository.findOne({ where: { id: ownerId } });
       if (owner) {

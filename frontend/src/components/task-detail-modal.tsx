@@ -53,11 +53,23 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate, onAddC
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [localTags, setLocalTags] = useState<string[]>([])
+  const [tagInput, setTagInput] = useState("")
   const { user: loggedUser } = useAuth()
+
+  // Initialize local tag state whenever task changes
+  useEffect(() => {
+    setLocalTags(task?.tags || [])
+    setTagInput("")
+  }, [task])
 
   if (!task) return null
 
   const handleSave = () => {
+    // Persist tags edits
+    if (localTags) {
+      editedTask.tags = localTags
+    }
     if (!loggedUser) {
       // Não registra atividade se não houver usuário logado
       onUpdate({ ...editedTask })
@@ -171,6 +183,17 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate, onAddC
   const completedSubtasks = (task.subtasks || []).filter((st) => st.completed).length
   const subtaskProgress = (task.subtasks?.length ?? 0) > 0 ? (completedSubtasks / task.subtasks.length) * 100 : 0
 
+  const addTag = () => {
+    const t = tagInput.trim()
+    if (!t) return
+    if (!localTags.includes(t)) setLocalTags([...localTags, t])
+    setTagInput("")
+  }
+
+  const removeTag = (t: string) => {
+    setLocalTags(localTags.filter(x => x !== t))
+  }
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSelectedFiles(e.target.files)
     setUploadError(null)
@@ -223,46 +246,71 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate, onAddC
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto bg-muted/50 border border-border rounded-2xl shadow-2xl p-8">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto bg-white border border-border rounded-2xl shadow-2xl p-0">
         <DialogHeader>
-          <div className="flex items-center justify-between mb-6">
-            <DialogTitle className="text-2xl font-bold text-gray-900">
-              {isEditing ? (
-                <Input
-                  value={editedTask.title ?? task.title}
-                  onChange={(e) => setEditedTask({ ...editedTask, title: e.target.value })}
-                  className="text-2xl font-bold"
-                />
-              ) : (
-                task.title
+          <div className="px-6 pt-5">
+            <div className="flex items-center justify-between mb-2">
+              <DialogTitle className="text-2xl font-bold text-gray-900">
+                {isEditing ? (
+                  <Input
+                    value={editedTask.title ?? task.title}
+                    onChange={(e) => setEditedTask({ ...editedTask, title: e.target.value })}
+                    className="text-2xl font-bold"
+                  />
+                ) : (
+                  task.title
+                )}
+              </DialogTitle>
+              <div className="flex items-center gap-2">
+                {isEditing ? (
+                  <>
+                    <Button size="sm" onClick={handleSave}>
+                      <Save className="w-4 h-4 mr-1" />
+                      Salvar
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={handleCancel}>
+                      <X className="w-4 h-4 mr-1" />
+                      Cancelar
+                    </Button>
+                  </>
+                ) : (
+                  <Button size="sm" variant="outline" onClick={() => setIsEditing(true)}>
+                    <Edit3 className="w-4 h-4 mr-1" />
+                    Editar
+                  </Button>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-3 pb-4 border-b">
+              <Badge variant="outline" className="capitalize">{task.status}</Badge>
+              <Badge className={`capitalize ${task.priority === 'urgent' ? 'bg-red-600 text-white' : task.priority === 'high' ? 'bg-red-100 text-red-800' : task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>{task.priority}</Badge>
+              {task.assignee && (
+                <div className="flex items-center gap-2 ml-2">
+                  <Avatar className="w-6 h-6">
+                    {task.assignee.avatar ? <AvatarImage src={task.assignee.avatar} alt={task.assignee.name} /> : null}
+                    <AvatarFallback className="text-xs">{task.assignee.name.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm text-gray-700">{task.assignee.name}</span>
+                </div>
               )}
-            </DialogTitle>
-            <div className="flex items-center gap-2">
-              {isEditing ? (
-                <>
-                  <Button size="sm" onClick={handleSave}>
-                    <Save className="w-4 h-4 mr-1" />
-                    Salvar
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={handleCancel}>
-                    <X className="w-4 h-4 mr-1" />
-                    Cancelar
-                  </Button>
-                </>
-              ) : (
-                <Button size="sm" variant="outline" onClick={() => setIsEditing(true)}>
-                  <Edit3 className="w-4 h-4 mr-1" />
-                  Editar
-                </Button>
+              {task.endDate && (
+                <span className="text-xs text-gray-600 flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  Entrega: {new Date(task.endDate).toLocaleDateString('pt-BR')}
+                </span>
+              )}
+              {task.subtasks && task.subtasks.length > 0 && (
+                <div className="flex items-center gap-2 ml-auto">
+                  <span className="text-xs text-gray-600">Progresso</span>
+                  <Progress value={subtaskProgress} className="w-40 h-2" />
+                </div>
               )}
             </div>
+            <DialogDescription className="pt-3 text-gray-600">Veja, edite ou acompanhe os detalhes, subtasks, comentários e anexos desta task.</DialogDescription>
           </div>
-          <DialogDescription>
-            Veja, edite ou acompanhe os detalhes, subtasks, comentários e anexos desta task.
-          </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 p-6">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Description */}
@@ -546,7 +594,13 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate, onAddC
                     <SelectContent>
                       {users.map((user) => (
                         <SelectItem key={user.id} value={user.id}>
-                          {user.name}
+                          <div className="flex items-center gap-2">
+                            <Avatar className="w-5 h-5">
+                              <AvatarImage src={user.avatar} alt={user.name} />
+                              <AvatarFallback>{user.name?.[0]}</AvatarFallback>
+                            </Avatar>
+                            <span className="text-sm">{user.name}</span>
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -632,16 +686,38 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate, onAddC
                   <Tag className="w-4 h-4" />
                   Tags
                 </label>
-                <div className="flex flex-wrap gap-1">
-                  {(task.tags || []).map((tag) => (
-                    <Badge key={tag} variant="outline" className="text-xs">
-                      {tag}
-                    </Badge>
-                  ))}
-                  {(!task.tags || task.tags.length === 0) && (
-                    <span className="text-sm text-gray-500">Nenhuma tag</span>
-                  )}
-                </div>
+                {isEditing ? (
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap gap-2">
+                      {localTags.map((t) => (
+                        <span key={t} className="px-2 py-1 rounded-full text-xs border bg-gray-50">
+                          {t}
+                          <button className="ml-2 text-gray-500 hover:text-red-600" onClick={() => removeTag(t)}>×</button>
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Adicionar tag"
+                        value={tagInput}
+                        onChange={(e) => setTagInput(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && addTag()}
+                      />
+                      <Button size="sm" onClick={addTag}>Adicionar</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-1">
+                    {(task.tags || []).map((tag) => (
+                      <Badge key={tag} variant="outline" className="text-xs">
+                        {tag}
+                      </Badge>
+                    ))}
+                    {(!task.tags || task.tags.length === 0) && (
+                      <span className="text-sm text-gray-500">Nenhuma tag</span>
+                    )}
+                  </div>
+                )}
               </div>
 
               <Separator />
@@ -652,6 +728,17 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate, onAddC
                 <p>Atualizado: {new Date(task.updatedAt).toLocaleString("pt-BR")}</p>
                 <p>Reporter: {task.reporter?.name || "N/A"}</p>
               </div>
+
+              {/* Quick Actions */}
+              <div className="pt-2 border-t space-y-2">
+                <label className="text-sm font-medium mb-2 block">Ações Rápidas</label>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="secondary" onClick={() => onUpdate({ status: 'done' })}>Marcar como Concluída</Button>
+                  <Button size="sm" variant="outline" onClick={() => onUpdate({ status: 'review' })}>Mover para Revisão</Button>
+                  <Button size="sm" className="bg-red-600 hover:bg-red-700" onClick={() => onUpdate({ priority: 'urgent' })}>Definir como Urgente</Button>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>

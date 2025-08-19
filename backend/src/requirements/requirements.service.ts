@@ -6,6 +6,14 @@ import { CreateRequirementDto }      from './dto/create-requirement.dto';
 import { UpdateRequirementDto }      from './dto/update-requirement.dto';
 import { User }                      from '../users/entities/user.entity';
 
+function normalizeDateOnly(dateString?: string): Date | undefined {
+  if (!dateString) return undefined;
+  // Interpreta YYYY-MM-DD como data local ao meio-dia para evitar fuso UTC -1 dia
+  const [y, m, d] = dateString.split('-').map(Number);
+  if (!y || !m || !d) return new Date(dateString);
+  return new Date(y, m - 1, d, 12, 0, 0, 0);
+}
+
 @Injectable()
 export class RequirementsService {
   constructor(
@@ -17,6 +25,8 @@ export class RequirementsService {
     const { ownerId, ...rest } = dto;
     const req = this.repo.create({
       ...rest,
+      startDate: normalizeDateOnly(dto.startDate),
+      endDate: normalizeDateOnly(dto.endDate),
       ...(ownerId && { owner: { id: ownerId } as User }),
       dependencies: dto.dependencies || [],
       tags: dto.tags || [],
@@ -82,7 +92,10 @@ export class RequirementsService {
 
   async update(id: string, dto: UpdateRequirementDto): Promise<Requirement> {
     const req = await this.findOne(id);
-    Object.assign(req, dto);
+    const patch: any = { ...dto };
+    if (dto.startDate) patch.startDate = normalizeDateOnly(dto.startDate);
+    if (dto.endDate) patch.endDate = normalizeDateOnly(dto.endDate);
+    Object.assign(req, patch);
     // se vier ownerId em dto, atualiza a relação
     if ((dto as any).ownerId) {
       req.owner = { id: (dto as any).ownerId } as User;

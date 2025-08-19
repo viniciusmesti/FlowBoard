@@ -143,11 +143,13 @@ export function TaskCard({
         onDragStart={handleDragStart}
         onDragEnd={onDragEnd}
       >
-        <Badge className={getPriorityColor(task.priority)} variant="secondary">
-          {getPriorityIcon(task.priority)}
-          <span className="ml-1 capitalize">{task.priority}</span>
-        </Badge>
-        <h4 className={`font-medium text-xs truncate flex-1 ${task.status === "done" ? "line-through" : ""}`}>{task.title}</h4>
+        <CheckSquare className="w-4 h-4 text-green-600" />
+        <h4
+          title={task.title}
+          className={`font-medium text-xs truncate flex-1 ${task.status === "done" ? "line-through" : ""}`}
+        >
+          {task.title}
+        </h4>
         {task.assignee && (
           <Avatar className="w-6 h-6">
             {task.assignee.avatar ? (
@@ -161,9 +163,6 @@ export function TaskCard({
             </AvatarFallback>
           </Avatar>
         )}
-        <Badge className={getStatusColor(task.status)} variant="outline">
-          {task.status}
-        </Badge>
       </Card>
     )
   }

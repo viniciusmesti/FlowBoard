@@ -1,4 +1,4 @@
-export type NotificationType = 'overdue' | 'due-soon' | 'approval' | 'completed';
+export type NotificationType = 'overdue' | 'due-soon' | 'approval' | 'completed' | 'urgent';
 
 export interface NotificationItemDto {
   id: string;
@@ -7,6 +7,6 @@ export interface NotificationItemDto {
   description: string;
   requirementId: string;
   taskId?: string;
-  priority: 'high' | 'medium' | 'low';
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
   timestamp: string;   // virá como ISO string
 }

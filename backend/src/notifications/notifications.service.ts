@@ -109,6 +109,22 @@ export class NotificationsService {
 
       const items: NotificationItemDto[] = [];
 
+      // Notificações por prioridade urgente
+      for (const task of userTasks) {
+        if (task.priority === 'urgent' && task.status !== 'done') {
+          items.push({
+            id: `urgent-${task.id}`,
+            type: 'urgent',
+            title: 'Urgente',
+            description: `"${task.title}" foi marcada como urgente`,
+            requirementId: task.requirement?.id || 'independent',
+            taskId: task.id,
+            priority: task.priority,
+            timestamp: (task.updatedAt || new Date()).toISOString(),
+          });
+        }
+      }
+
       // Notificações de tasks (atrasadas e prazo próximo)
       for (const task of userTasks) {
         const dueDate = task.endDate ? new Date(task.endDate) : null;

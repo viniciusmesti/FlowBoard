@@ -22,6 +22,6 @@ export class Attachment {
   @Column({ type: 'float', nullable: true })
   size?: number;
 
-  @ManyToOne(() => Task, task => task.attachments)
+  @ManyToOne(() => Task, task => task.attachments, { onDelete: 'CASCADE' })
   task: Task;
 } 
