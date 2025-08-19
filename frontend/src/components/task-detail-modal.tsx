@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
+import { getAvatarUrl } from "@/lib/avatars"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -287,7 +288,7 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate, onAddC
               {task.assignee && (
                 <div className="flex items-center gap-2 ml-2">
                   <Avatar className="w-6 h-6">
-                    {task.assignee.avatar ? <AvatarImage src={task.assignee.avatar} alt={task.assignee.name} /> : null}
+                    {task.assignee.avatar ? <AvatarImage src={getAvatarUrl(task.assignee.avatar)} alt={task.assignee.name} /> : null}
                     <AvatarFallback className="text-xs">{task.assignee.name.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
                   </Avatar>
                   <span className="text-sm text-gray-700">{task.assignee.name}</span>
@@ -345,7 +346,7 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate, onAddC
                     {subtask.assignee && (
                       <Avatar className="w-5 h-5 ml-auto">
                         {subtask.assignee.avatar ? (
-                          <AvatarImage src={subtask.assignee.avatar} alt={subtask.assignee.name} />
+                          <AvatarImage src={getAvatarUrl(subtask.assignee.avatar)} alt={subtask.assignee.name} />
                         ) : null}
                         <AvatarFallback className="text-xs">
                           {subtask.assignee.name
@@ -396,7 +397,7 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate, onAddC
                       <div key={comment.id} className="flex gap-3 p-3 bg-gray-50 rounded border">
                         <Avatar className="w-8 h-8">
                           {comment.author?.avatar ? (
-                            <AvatarImage src={comment.author.avatar} alt={comment.author?.name} />
+                            <AvatarImage src={getAvatarUrl(comment.author.avatar)} alt={comment.author?.name} />
                           ) : null}
                           <AvatarFallback>
                           {comment.author?.name
@@ -439,7 +440,7 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate, onAddC
                       <div key={activity.id} className="flex gap-3 p-3 border-l-2 border-blue-200 bg-gray-50 rounded">
                         <Avatar className="w-6 h-6">
                           {activity.user?.avatar ? (
-                            <AvatarImage src={activity.user.avatar} alt={activity.user.name} />
+                            <AvatarImage src={getAvatarUrl(activity.user.avatar)} alt={activity.user.name} />
                           ) : null}
                           <AvatarFallback className="text-xs">
                             {activity.user?.name
@@ -596,7 +597,7 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate, onAddC
                         <SelectItem key={user.id} value={user.id}>
                           <div className="flex items-center gap-2">
                             <Avatar className="w-5 h-5">
-                              <AvatarImage src={user.avatar} alt={user.name} />
+                              <AvatarImage src={getAvatarUrl(user.avatar)} alt={user.name} />
                               <AvatarFallback>{user.name?.[0]}</AvatarFallback>
                             </Avatar>
                             <span className="text-sm">{user.name}</span>
@@ -609,7 +610,7 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate, onAddC
                   <div className="flex items-center gap-2">
                     <Avatar className="w-6 h-6">
                       {task.assignee.avatar ? (
-                        <AvatarImage src={task.assignee.avatar} alt={task.assignee.name} />
+                        <AvatarImage src={getAvatarUrl(task.assignee.avatar)} alt={task.assignee.name} />
                       ) : null}
                       <AvatarFallback className="text-xs">
                         {task.assignee.name

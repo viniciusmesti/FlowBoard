@@ -39,6 +39,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useScrumBoardContext } from "@/contexts/ScrumBoardContext"
 import { DashboardStats } from "@/components/dashboard-stats"
 import type { Requirement, RequirementTemplate } from "@/types"
+import { getAvatarUrl } from "@/lib/avatars"
 import Link from "next/link"
 import { RequirementActivationModal } from "@/components/requirement-activation-modal"
 import { RequirementDetailModal } from "@/components/requirement-detail-modal"
@@ -351,7 +352,7 @@ export default function Dashboard() {
               <div className="flex items-center gap-1">
                 <Avatar className="w-5 h-5">
                   {requirement.owner.avatar ? (
-                    <AvatarImage src={requirement.owner.avatar} alt={requirement.owner.name} />
+                    <AvatarImage src={getAvatarUrl(requirement.owner.avatar)} alt={requirement.owner.name} />
                   ) : null}
                   <AvatarFallback className="text-xs">
                     {requirement.owner.name

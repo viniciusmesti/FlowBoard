@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { AuthGuard } from "@/components/auth-guard"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useScrumBoardContext } from "@/contexts/ScrumBoardContext"
+import { getAvatarUrl } from "@/lib/avatars"
 import Link from "next/link"
 
 export default function ArchivedPage() {
@@ -104,7 +105,7 @@ export default function ArchivedPage() {
                       <div className="flex items-center gap-2">
                         <Avatar className="w-6 h-6">
                           {requirement.owner.avatar ? (
-                            <AvatarImage src={requirement.owner.avatar} alt={requirement.owner.name} />
+                            <AvatarImage src={getAvatarUrl(requirement.owner.avatar)} alt={requirement.owner.name} />
                           ) : null}
                           <AvatarFallback className="text-xs">
                             {requirement.owner?.name

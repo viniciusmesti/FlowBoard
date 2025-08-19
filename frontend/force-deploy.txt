@@ -1,0 +1,3 @@
+# Forçar deploy do Vercel
+# Este arquivo foi criado para forçar o Vercel a detectar mudanças
+# e fazer deploy dos avatares que foram adicionados ao git

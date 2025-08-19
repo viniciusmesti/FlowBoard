@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import type { Requirement, Task, User } from "@/types"
+import { getAvatarUrl } from "@/lib/avatars"
 import { Calendar, Flag, CheckCircle, Edit, Save, X } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 
@@ -169,18 +170,20 @@ export function RequirementDetailModal({ requirement, users, isOpen, onClose, on
               )}
             </TabsContent>
             <TabsContent value="team" className="space-y-2">
-              <div className="flex items-center gap-3">
-                <div className="flex -space-x-2">
-                  <Avatar className="w-7 h-7 border">
-                    <AvatarImage src={requirement.owner?.avatar} />
-                    <AvatarFallback>{requirement.owner?.name?.[0]}</AvatarFallback>
-                  </Avatar>
+                              <div className="flex items-center gap-3">
+                  <div className="flex -space-x-2">
+                    <Avatar className="w-7 h-7 border">
+                      {requirement.owner?.avatar ? (
+                        <AvatarImage src={getAvatarUrl(requirement.owner.avatar)} alt={requirement.owner.name} />
+                      ) : null}
+                      <AvatarFallback>{requirement.owner?.name?.[0]}</AvatarFallback>
+                    </Avatar>
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium">Owner</div>
+                    <div className="text-sm text-gray-600">{requirement.owner?.name || '—'}</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-sm font-medium">Owner</div>
-                  <div className="text-sm text-gray-600">{requirement.owner?.name || '—'}</div>
-                </div>
-              </div>
             </TabsContent>
             <TabsContent value="activity" className="space-y-2">
               <p className="text-sm text-gray-500">Histórico de atividade do requisito em breve.</p>

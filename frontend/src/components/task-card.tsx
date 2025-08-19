@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
 import { useNotifications } from "@/contexts/NotificationContext"
+import { getAvatarUrl } from "@/lib/avatars"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -327,7 +328,7 @@ export function TaskCard({
             {/* Assignee */}
             {task.assignee && (
               <Avatar className="w-6 h-6">
-                <AvatarImage src={task.assignee.avatar || "/placeholder.png"} />
+                <AvatarImage src={task.assignee.avatar ? getAvatarUrl(task.assignee.avatar) : "/placeholder.png"} />
                 <AvatarFallback className="text-xs">
                   {task.assignee.name
                     .split(" ")

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { AuthGuard } from "@/components/auth-guard"
+import { getAvatarUrl } from "@/lib/avatars"
 import {
   Dialog,
   DialogContent,
@@ -440,7 +441,9 @@ export default function RequirementPage() {
                               <SelectItem key={user.id} value={user.id}>
                                 <div className="flex items-center gap-2">
                                   <Avatar className="h-5 w-5">
-                                    <AvatarImage src={user.avatar} alt={user.name} />
+                                    {user.avatar ? (
+                                      <AvatarImage src={getAvatarUrl(user.avatar)} alt={user.name} />
+                                    ) : null}
                                     <AvatarFallback>{user.name?.[0]}</AvatarFallback>
                                   </Avatar>
                                   <span className="text-sm">{user.name}</span>
@@ -704,6 +707,9 @@ export default function RequirementPage() {
             {/* Owner */}
             <div className="flex items-center gap-2">
               <Avatar>
+                {requirement.owner.avatar ? (
+                  <AvatarImage src={getAvatarUrl(requirement.owner.avatar)} alt={requirement.owner.name} />
+                ) : null}
                 <AvatarFallback>
                   {requirement.owner.name
                     .split(" ")
@@ -729,7 +735,7 @@ export default function RequirementPage() {
               <div key={`assignee-${user!.id}`} className="flex items-center gap-2">
                 <Avatar className="w-8 h-8">
                   {user.avatar ? (
-                    <AvatarImage src={user.avatar} alt={user.name} />
+                    <AvatarImage src={getAvatarUrl(user.avatar)} alt={user.name} />
                   ) : null}
                   <AvatarFallback className="text-xs">
                     {user!.name
