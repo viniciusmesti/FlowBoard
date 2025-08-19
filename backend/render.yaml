@@ -3,8 +3,8 @@ services:
     name: flowboard-backend
     env: node
     plan: free
-    buildCommand: npm install && npm run build
-    startCommand: npm run start:prod
+    buildCommand: cd backend && npm install && npm run build:prod
+    startCommand: cd backend && npm run start:prod
     envVars:
       - key: NODE_ENV
         value: production
@@ -14,5 +14,7 @@ services:
         sync: false
       - key: SEED_SAMPLE_DATA
         value: false
+      - key: FRONTEND_URL
+        sync: false
     healthCheckPath: /health
     autoDeploy: true
