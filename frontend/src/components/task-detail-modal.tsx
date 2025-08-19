@@ -597,7 +597,7 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate, onAddC
                         <SelectItem key={user.id} value={user.id}>
                           <div className="flex items-center gap-2">
                             <Avatar className="w-5 h-5">
-                              <AvatarImage src={getAvatarUrl(user.avatar)} alt={user.name} />
+                              <AvatarImage src={user.avatar ? getAvatarUrl(user.avatar) : "/placeholder.png"} alt={user.name} />
                               <AvatarFallback>{user.name?.[0]}</AvatarFallback>
                             </Avatar>
                             <span className="text-sm">{user.name}</span>
