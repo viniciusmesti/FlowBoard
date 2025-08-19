@@ -12,5 +12,9 @@ services:
         value: https://flow-board-peach.vercel.app
       - key: SEED_SAMPLE_DATA
         value: false
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
     healthCheckPath: /health
     autoDeploy: true

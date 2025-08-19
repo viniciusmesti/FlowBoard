@@ -48,7 +48,8 @@ import { Template } from './templates/entities/template.entity';
         ApprovalRequest,
         Template,
       ],
-      synchronize: process.env.NODE_ENV !== 'production',
+      // TEMPORARIAMENTE habilitado para criar tabelas em produção
+      synchronize: true, // process.env.NODE_ENV !== 'production',
       dropSchema: false,
       ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
       logging: process.env.NODE_ENV === 'development',
