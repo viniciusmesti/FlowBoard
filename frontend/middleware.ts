@@ -1,11 +1,28 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { verifyToken } from "@/lib/auth"
 
 // Rotas que precisam de autenticação
 const protectedRoutes = ["/notifications", "/settings", "/archived"]
 
 // Rotas públicas (não precisam de autenticação)
 const publicRoutes = ["/login", "/register"]
+
+// Função simples para verificar token (compatível com Edge Runtime)
+function verifyTokenSimple(token: string): boolean {
+  try {
+    // Decodificar o token base64
+    const decoded = atob(token)
+    const tokenData = JSON.parse(decoded)
+    
+    // Verificar se o token não expirou
+    if (tokenData.exp && tokenData.exp < Date.now()) {
+      return false
+    }
+    
+    return true
+  } catch {
+    return false
+  }
+}
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -21,20 +38,20 @@ export function middleware(request: NextRequest) {
       request.cookies.get("auth_token")?.value || request.headers.get("authorization")?.replace("Bearer ", "")
 
     if (!token) {
-            // return NextResponse.redirect(new URL("/login", request.url))
-            return NextResponse.next()
+      // return NextResponse.redirect(new URL("/login", request.url))
+      return NextResponse.next()
     }
 
     try {
-      const payload = verifyToken(token)
-      if (!payload) {
-                // return NextResponse.redirect(new URL("/login", request.url))
-                return NextResponse.next()
+      const isValid = verifyTokenSimple(token)
+      if (!isValid) {
+        // return NextResponse.redirect(new URL("/login", request.url))
+        return NextResponse.next()
       }
       return NextResponse.next()
     } catch (error) {
-            // return NextResponse.redirect(new URL("/login", request.url))
-            return NextResponse.next()
+      // return NextResponse.redirect(new URL("/login", request.url))
+      return NextResponse.next()
     }
   }
 
