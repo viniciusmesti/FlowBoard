@@ -6,7 +6,7 @@ import type { User } from "@/types"
 interface AuthContextType {
   user: User | null
   login: (email: string, password: string) => Promise<boolean>
-  register: (name: string, email: string, password: string, role: User["role"]) => Promise<boolean>
+  register: (name: string, email: string, password: string, role: User["role"], avatar: string) => Promise<boolean>
   logout: () => void
   isLoading: boolean
   error: string | null
@@ -64,7 +64,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     name: string,
     email: string,
     password: string,
-    role: User["role"]
+    role: User["role"],
+    avatar: string
   ): Promise<boolean> => {
     setIsLoading(true)
     setError(null)
@@ -72,7 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch(`${API_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, role }),
+        body: JSON.stringify({ name, email, password, role, avatar }),
       })
       const data = await res.json()
       if (!res.ok) {

@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, UserPlus } from "lucide-react"
+import { AvatarSelector } from "@/components/avatar-selector"
 import type { User } from "@/types"
 
 export default function RegisterPage() {
@@ -21,6 +22,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [role, setRole] = useState<User["role"]>("developer")
+  const [avatar, setAvatar] = useState("user")
   const [passwordError, setPasswordError] = useState("")
 
   const { register, isLoading, error, user } = useAuth()
@@ -52,7 +54,7 @@ export default function RegisterPage() {
 
     setPasswordError("")
 
-    const success = await register(name, email, password, role)
+    const success = await register(name, email, password, role, avatar)
     if (success) {
        router.push("/login")
     }
@@ -125,6 +127,12 @@ export default function RegisterPage() {
                 </SelectContent>
               </Select>
             </div>
+
+            <AvatarSelector
+              selectedAvatar={avatar}
+              onAvatarSelect={setAvatar}
+              label="Foto de perfil"
+            />
 
             <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>

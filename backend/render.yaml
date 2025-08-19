@@ -3,18 +3,14 @@ services:
     name: flowboard-backend
     env: node
     plan: free
-    buildCommand: cd backend && npm install && npm run build:prod
-    startCommand: cd backend && npm run start:prod
+    buildCommand: npm install && npm run build
+    startCommand: npm run start:prod
     envVars:
       - key: NODE_ENV
         value: production
-      - key: DATABASE_URL
-        sync: false
-      - key: JWT_SECRET
-        sync: false
+      - key: FRONTEND_URL
+        value: https://flow-board-peach.vercel.app
       - key: SEED_SAMPLE_DATA
         value: false
-      - key: FRONTEND_URL
-        sync: false
     healthCheckPath: /health
     autoDeploy: true

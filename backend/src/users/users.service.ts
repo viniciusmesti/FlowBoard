@@ -14,6 +14,11 @@ export class UsersService {
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
+    // Definir avatar padrão se não fornecido
+    if (!createUserDto.avatar) {
+      createUserDto.avatar = 'user';
+    }
+    
     const user = this.usersRepository.create(createUserDto);
     return this.usersRepository.save(user);
   }
