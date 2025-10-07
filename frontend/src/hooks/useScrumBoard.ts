@@ -125,12 +125,16 @@ export function useScrumBoard() {
     async function fetchRequirements() {
       setLoading(true)
       setApiError(null)
+      console.log('🔍 [DEBUG] Buscando requisitos do backend:', API_URL)
       try {
         const res = await fetch(`${API_URL}/requirements`)
+        console.log('📡 [DEBUG] Resposta do backend:', res.status, res.statusText)
         if (!res.ok) throw new Error("Erro ao buscar requisitos do backend")
         const data = await res.json()
+        console.log('📊 [DEBUG] Dados recebidos:', data)
         setRawRequirements(data)
       } catch (err: any) {
+        console.error('❌ [DEBUG] Erro ao buscar requisitos:', err)
         setApiError("Erro ao buscar requisitos do backend. Usando dados locais.")
       } finally {
         setLoading(false)
@@ -142,17 +146,44 @@ export function useScrumBoard() {
   // Funções para sincronizar com o backend
   const addRequirement = useCallback(
     async (requirement: Omit<Requirement, "id" | "createdAt" | "updatedAt">) => {
+      console.log('➕ [DEBUG] Criando requisito:', requirement)
       try {
+        // Transformar dados do frontend para o formato do backend
+        const backendData = {
+          title: requirement.title,
+          description: requirement.description || '',
+          color: requirement.color,
+          status: requirement.status || 'planning',
+          priority: requirement.priority || 'medium',
+          ownerId: requirement.owner?.id, // Backend espera ownerId, não o objeto owner
+          startDate: requirement.startDate,
+          endDate: requirement.endDate,
+          estimatedHours: requirement.estimatedHours,
+          budget: requirement.budget,
+          dependencies: requirement.dependencies || [],
+          category: requirement.category,
+          tags: requirement.tags || [],
+          approvalRequired: requirement.approvalRequired || false,
+        }
+        console.log('📤 [DEBUG] Enviando para backend:', backendData)
+        
         const res = await fetch(`${API_URL}/requirements`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(requirement),
+          body: JSON.stringify(backendData),
         })
-        if (!res.ok) throw new Error("Erro ao criar requisito no backend")
+        console.log('📡 [DEBUG] Resposta POST /requirements:', res.status, res.statusText)
+        if (!res.ok) {
+          const errorText = await res.text()
+          console.error('❌ [DEBUG] Erro na resposta:', errorText)
+          throw new Error("Erro ao criar requisito no backend")
+        }
         const newRequirement = await res.json()
+        console.log('✅ [DEBUG] Requisito criado no backend:', newRequirement)
         setRawRequirements((prev) => [...prev, newRequirement])
         return newRequirement
       } catch (err) {
+        console.error('❌ [DEBUG] Falha ao criar requisito, usando fallback local:', err)
         // Fallback local
         const newRequirement: Requirement = {
           ...requirement,
@@ -166,6 +197,7 @@ export function useScrumBoard() {
           dependencies: requirement.dependencies || [],
           tags: requirement.tags || [],
         }
+        console.log('💾 [DEBUG] Requisito criado localmente:', newRequirement)
         setRawRequirements((prev) => [...prev, newRequirement])
         return newRequirement
       }
@@ -175,16 +207,43 @@ export function useScrumBoard() {
 
   const updateRequirement = useCallback(
     async (id: string, updates: Partial<Requirement>) => {
+      console.log('🔄 [DEBUG] Atualizando requisito:', id, updates)
       try {
+        // Transformar dados do frontend para o formato do backend
+        const backendData: any = {}
+        if (updates.title !== undefined) backendData.title = updates.title
+        if (updates.description !== undefined) backendData.description = updates.description
+        if (updates.color !== undefined) backendData.color = updates.color
+        if (updates.status !== undefined) backendData.status = updates.status
+        if (updates.priority !== undefined) backendData.priority = updates.priority
+        if (updates.owner !== undefined) backendData.ownerId = updates.owner?.id
+        if (updates.startDate !== undefined) backendData.startDate = updates.startDate
+        if (updates.endDate !== undefined) backendData.endDate = updates.endDate
+        if (updates.estimatedHours !== undefined) backendData.estimatedHours = updates.estimatedHours
+        if (updates.budget !== undefined) backendData.budget = updates.budget
+        if (updates.dependencies !== undefined) backendData.dependencies = updates.dependencies
+        if (updates.category !== undefined) backendData.category = updates.category
+        if (updates.tags !== undefined) backendData.tags = updates.tags
+        if (updates.approvalRequired !== undefined) backendData.approvalRequired = updates.approvalRequired
+        
+        console.log('📤 [DEBUG] Enviando PATCH para backend:', backendData)
+        
         const res = await fetch(`${API_URL}/requirements/${id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updates),
+          body: JSON.stringify(backendData),
         })
-        if (!res.ok) throw new Error("Erro ao atualizar requisito no backend")
+        console.log('📡 [DEBUG] Resposta PATCH /requirements:', res.status, res.statusText)
+        if (!res.ok) {
+          const errorText = await res.text()
+          console.error('❌ [DEBUG] Erro na resposta:', errorText)
+          throw new Error("Erro ao atualizar requisito no backend")
+        }
         const updated = await res.json()
+        console.log('✅ [DEBUG] Requisito atualizado no backend:', updated)
         setRawRequirements((prev) => prev.map((req) => req.id === id ? updated : req))
       } catch (err) {
+        console.error('❌ [DEBUG] Falha ao atualizar requisito, usando fallback local:', err)
         // Fallback local
         setRawRequirements((prev) =>
           prev.map((req) =>
@@ -220,14 +279,21 @@ export function useScrumBoard() {
   // Aqui, fallback local se não houver endpoint
   const addTask = useCallback(
     async (requirementId: string, task: Omit<Task, "id" | "createdAt" | "updatedAt">) => {
+      console.log('➕ [DEBUG] Criando task:', task, 'para requisito:', requirementId)
       try {
         const res = await fetch(`${API_URL}/tasks`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ...task, requirementId }),
         })
-        if (!res.ok) throw new Error("Erro ao criar task no backend")
+        console.log('📡 [DEBUG] Resposta POST /tasks:', res.status, res.statusText)
+        if (!res.ok) {
+          const errorText = await res.text()
+          console.error('❌ [DEBUG] Erro na resposta:', errorText)
+          throw new Error("Erro ao criar task no backend")
+        }
         const newTask = await res.json()
+        console.log('✅ [DEBUG] Task criada no backend:', newTask)
         setRawRequirements((prev) =>
           prev.map((req) =>
             req.id === requirementId
@@ -237,6 +303,7 @@ export function useScrumBoard() {
         )
         return newTask
       } catch (err) {
+        console.error('❌ [DEBUG] Falha ao criar task, usando fallback local:', err)
         // Fallback local
         const newTask: Task = {
           ...task,
