@@ -7,8 +7,9 @@ import {
     @IsString()  
     title: string;
   
-    @IsString()
-    description: string;
+  @IsString()
+  @IsOptional()
+  description?: string;
   
     @IsString()
     color: string;

@@ -12,8 +12,8 @@ export class Requirement {
   @Column()
   title: string;
 
-  @Column('text')
-  description: string;
+  @Column('text', { nullable: true })
+  description?: string;
 
   @Column()
   color: string;
