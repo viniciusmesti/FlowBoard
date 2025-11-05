@@ -29,10 +29,14 @@ export class UsersService {
         throw new ConflictException('Email já está em uso');
       }
 
-      // Definir avatar padrão se não fornecido
-      if (!createUserDto.avatar) {
+      // Sanitizar avatar (remover caminhos e extensões se existirem)
+      if (createUserDto.avatar) {
+        createUserDto.avatar = createUserDto.avatar
+          .replace(/^\/avatars\//, '')
+          .replace(/\.png$/, '')
+          .replace(/^avatars\//, '');
+      } else {
         createUserDto.avatar = 'user';
-        console.log('Avatar padrão definido:', createUserDto.avatar);
       }
       
       console.log('Criando usuário com avatar:', createUserDto.avatar);
@@ -106,6 +110,14 @@ export class UsersService {
       
       if (updateUserDto.password) {
         updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
+      }
+
+      // Sanitizar avatar se fornecido
+      if (updateUserDto.avatar) {
+        updateUserDto.avatar = updateUserDto.avatar
+          .replace(/^\/avatars\//, '')
+          .replace(/\.png$/, '')
+          .replace(/^avatars\//, '');
       }
 
       Object.assign(user, updateUserDto);

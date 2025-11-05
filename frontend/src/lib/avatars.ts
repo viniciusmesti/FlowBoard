@@ -14,7 +14,18 @@ export function getAvatarById(id: string) {
 
 // Função para obter a URL do avatar
 export function getAvatarUrl(avatarId: string) {
-  return `/avatars/${avatarId}.png`
+  // Se já for uma URL completa, retornar como está
+  if (!avatarId || avatarId.startsWith('/')) {
+    return avatarId || '/avatars/user.png'
+  }
+  
+  // Se já tiver .png, remover para evitar duplicação
+  const cleanId = avatarId.replace(/\.png$/, '')
+  
+  // Se ainda tiver 'avatars/' no caminho, remover
+  const finalId = cleanId.replace(/^avatars\//, '')
+  
+  return `/avatars/${finalId}.png`
 }
 
 // Função para obter o fallback do avatar (cor + nome)

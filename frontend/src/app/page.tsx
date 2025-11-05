@@ -384,6 +384,43 @@ export default function Dashboard() {
             </div>
           )}
 
+          {/* Task Information */}
+          {(() => {
+            const tasks = requirement.tasks || []
+            const completedTasks = tasks.filter(t => t.status === 'done').sort((a, b) => 
+              new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+            )
+            const lastCompletedTask = completedTasks[0]
+            
+            const openTasks = tasks.filter(t => t.status !== 'done').sort((a, b) => 
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            )
+            const lastCreatedTask = openTasks[0]
+            
+            return (lastCompletedTask || lastCreatedTask) ? (
+              <div className="flex flex-col gap-1 mt-3 pt-3 border-t">
+                {lastCompletedTask && (
+                  <div className="flex items-center gap-1 text-xs text-green-600">
+                    <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                    <span>Última concluída: {lastCompletedTask.title.length > 30 ? 
+                      `${lastCompletedTask.title.substring(0, 30)}...` : 
+                      lastCompletedTask.title
+                    }</span>
+                  </div>
+                )}
+                {lastCreatedTask && (
+                  <div className="flex items-center gap-1 text-xs text-blue-600">
+                    <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                    <span>Última criada: {lastCreatedTask.title.length > 30 ? 
+                      `${lastCreatedTask.title.substring(0, 30)}...` : 
+                      lastCreatedTask.title
+                    }</span>
+                  </div>
+                )}
+              </div>
+            ) : null
+          })()}
+
           {/* Dropdown Menu */}
           <div className="absolute top-2 right-2">
             <DropdownMenu>

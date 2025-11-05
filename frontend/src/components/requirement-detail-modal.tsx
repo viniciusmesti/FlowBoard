@@ -24,7 +24,14 @@ interface RequirementDetailModalProps {
 
 export function RequirementDetailModal({ requirement, users, isOpen, onClose, onUpdate }: RequirementDetailModalProps) {
   const [editing, setEditing] = useState(false)
-  const [form, setForm] = useState({ title: "", description: "", priority: "medium" as Requirement["priority"], endDate: "" })
+  const [form, setForm] = useState({ 
+    title: "", 
+    description: "", 
+    priority: "medium" as Requirement["priority"], 
+    endDate: "",
+    currentSprint: "",
+    lastCompletedSprint: ""
+  })
 
   useEffect(() => {
     if (requirement) {
@@ -33,6 +40,8 @@ export function RequirementDetailModal({ requirement, users, isOpen, onClose, on
         description: requirement.description,
         priority: requirement.priority,
         endDate: requirement.endDate || "",
+        currentSprint: requirement.currentSprint || "",
+        lastCompletedSprint: requirement.lastCompletedSprint || "",
       })
       setEditing(false)
     }
@@ -52,6 +61,8 @@ export function RequirementDetailModal({ requirement, users, isOpen, onClose, on
       description: form.description,
       priority: form.priority,
       endDate: form.endDate || undefined,
+      currentSprint: form.currentSprint || undefined,
+      lastCompletedSprint: form.lastCompletedSprint || undefined,
     })
     setEditing(false)
   }
@@ -145,6 +156,35 @@ export function RequirementDetailModal({ requirement, users, isOpen, onClose, on
                 <div className="flex gap-2">
                   <Badge className={priorityColor(requirement.priority)} variant="secondary">{requirement.priority}</Badge>
                 </div>
+              )}
+
+              {/* Sprint Information */}
+              <Label className="mt-4">Sprint Atual</Label>
+              {editing ? (
+                <Input 
+                  type="text" 
+                  placeholder="Ex: Sprint 5, Q4 2024, etc."
+                  value={form.currentSprint} 
+                  onChange={(e) => setForm({ ...form, currentSprint: e.target.value })} 
+                />
+              ) : (
+                <p className="text-sm text-gray-700">
+                  {requirement.currentSprint || '—'}
+                </p>
+              )}
+
+              <Label className="mt-3">Último Sprint Concluído</Label>
+              {editing ? (
+                <Input 
+                  type="text" 
+                  placeholder="Ex: Sprint 4, Q3 2024, etc."
+                  value={form.lastCompletedSprint} 
+                  onChange={(e) => setForm({ ...form, lastCompletedSprint: e.target.value })} 
+                />
+              ) : (
+                <p className="text-sm text-gray-700">
+                  {requirement.lastCompletedSprint || '—'}
+                </p>
               )}
             </div>
           </div>

@@ -20,4 +20,15 @@ export class CreateUserDto {
   @IsString()
   @IsOptional()
   avatar?: string;
+  
+  // Método para sanitizar o avatar antes de salvar
+  sanitizeAvatar(): void {
+    if (this.avatar) {
+      // Remover qualquer caminho '/avatars/' ou extensão '.png'
+      this.avatar = this.avatar
+        .replace(/^\/avatars\//, '')
+        .replace(/\.png$/, '')
+        .replace(/^avatars\//, '');
+    }
+  }
 } 

@@ -60,29 +60,31 @@ export interface User {
     assignee?: User
   }
   
-  export interface Requirement {
-    id: string
-    title: string
-    description: string
-    color: string
-    status: "planning" | "pending-approval" | "active" | "completed" | "on-hold" | "cancelled"
-    priority: "low" | "medium" | "high"
-    owner: User
-    startDate?: string
-    endDate?: string
-    estimatedHours?: number
-    budget?: number
-    progress: number
-    tasks: Task[]
-    milestones: Milestone[]
-    comments: RequirementComment[]
-    dependencies: string[] // IDs of requirements this depends on
-    category?: string
-    tags: string[]
-    approvalRequired: boolean
-    createdAt: string
-    updatedAt: string
-  }
+export interface Requirement {
+  id: string
+  title: string
+  description: string
+  color: string
+  status: "planning" | "pending-approval" | "active" | "completed" | "on-hold" | "cancelled"
+  priority: "low" | "medium" | "high"
+  owner: User
+  startDate?: string
+  endDate?: string
+  estimatedHours?: number
+  budget?: number
+  progress: number
+  tasks: Task[]
+  milestones: Milestone[]
+  comments: RequirementComment[]
+  dependencies: string[] // IDs of requirements this depends on
+  category?: string
+  tags: string[]
+  approvalRequired: boolean
+  currentSprint?: string // Sprint atual em que o requisito está sendo trabalhado
+  lastCompletedSprint?: string // Último sprint em que o requisito foi concluído
+  createdAt: string
+  updatedAt: string
+}
   
   export interface ProjectStats {
     totalRequirements: number

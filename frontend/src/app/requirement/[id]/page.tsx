@@ -334,6 +334,48 @@ export default function RequirementPage() {
                   {requirement.priority}
                 </Badge>
               </div>
+
+              {/* Task Information */}
+              {(() => {
+                const tasks = requirement.tasks || []
+                const completedTasks = tasks.filter(t => t.status === 'done').sort((a, b) => 
+                  new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+                )
+                const lastCompletedTask = completedTasks[0]
+                
+                const openTasks = tasks.filter(t => t.status !== 'done').sort((a, b) => 
+                  new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                )
+                const lastCreatedTask = openTasks[0]
+                
+                return (lastCompletedTask || lastCreatedTask) ? (
+                  <div className="flex flex-col gap-2 mb-3">
+                    {lastCompletedTask && (
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                          <div className="w-2 h-2 bg-green-400 rounded-full mr-1"></div>
+                          Última concluída: {lastCompletedTask.title.length > 25 ? 
+                            `${lastCompletedTask.title.substring(0, 25)}...` : 
+                            lastCompletedTask.title
+                          }
+                        </Badge>
+                      </div>
+                    )}
+                    {lastCreatedTask && (
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                          <div className="w-2 h-2 bg-blue-400 rounded-full mr-1"></div>
+                          Última criada: {lastCreatedTask.title.length > 25 ? 
+                            `${lastCreatedTask.title.substring(0, 25)}...` : 
+                            lastCreatedTask.title
+                          }
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+                ) : null
+              })()}
+
               <p className="text-gray-600 mb-4">{requirement.description}</p>
 
               {/* Progress and Stats */}

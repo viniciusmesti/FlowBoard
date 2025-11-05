@@ -121,6 +121,27 @@ export default function ArchivedPage() {
                         <Calendar className="w-4 h-4" />
                         <span>Concluído em {new Date(requirement.updatedAt).toLocaleDateString("pt-BR")}</span>
                       </div>
+
+                      {/* Last Completed Task */}
+                      {(() => {
+                        const tasks = requirement.tasks || []
+                        const completedTasks = tasks.filter(t => t.status === 'done').sort((a, b) => 
+                          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+                        )
+                        const lastCompletedTask = completedTasks[0]
+                        
+                        return lastCompletedTask ? (
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                              <div className="w-2 h-2 bg-green-400 rounded-full mr-1"></div>
+                              Última concluída: {lastCompletedTask.title.length > 20 ? 
+                                `${lastCompletedTask.title.substring(0, 20)}...` : 
+                                lastCompletedTask.title
+                              }
+                            </Badge>
+                          </div>
+                        ) : null
+                      })()}
                     </div>
 
                     {/* Actions */}

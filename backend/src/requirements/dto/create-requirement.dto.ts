@@ -56,8 +56,16 @@ import {
     @IsOptional()
     tags?: string[];
   
-    @IsBoolean()
-    @IsOptional()
-    approvalRequired?: boolean;
-  }
+  @IsBoolean()
+  @IsOptional()
+  approvalRequired?: boolean;
+
+  @IsString()
+  @IsOptional()
+  currentSprint?: string;
+
+  @IsString()
+  @IsOptional()
+  lastCompletedSprint?: string;
+}
   

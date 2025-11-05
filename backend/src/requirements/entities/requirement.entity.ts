@@ -75,6 +75,12 @@ export class Requirement {
   @OneToMany(() => ApprovalRequest, approvalRequest => approvalRequest.requirement, { cascade: ['remove'], onDelete: 'CASCADE' })
   approvalRequests: ApprovalRequest[];
 
+  @Column({ nullable: true })
+  currentSprint?: string; // Sprint atual em que o requisito está sendo trabalhado
+
+  @Column({ nullable: true })
+  lastCompletedSprint?: string; // Último sprint em que o requisito foi concluído
+
   @CreateDateColumn()
   createdAt: Date;
 
