@@ -89,6 +89,15 @@ export class Task {
   @Column({ type: 'float', nullable: true })
   actualHours?: number;
 
+  @Column('text', { nullable: true })
+  userStory?: string; // User Story da task (ex: "Como usuário, quero...")
+
+  @Column({ nullable: true })
+  currentSprint?: string; // Sprint atual em que a task está sendo trabalhada
+
+  @Column('text', { nullable: true })
+  sprintGoal?: string; // Objetivo da sprint (pode ser igual à descrição)
+
   @CreateDateColumn()
   createdAt: Date;
 

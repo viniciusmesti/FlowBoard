@@ -78,9 +78,13 @@ export default function RequirementPage() {
     description: "",
     priority: "medium" as const,
     assignee: "",
+    startDate: "",
     endDate: "",
     estimatedHours: "",
     tags: [] as string[],
+    userStory: "",
+    currentSprint: "",
+    sprintGoal: "",
   })
 
   const usersWithLogged = users.some(u => u.id === loggedUser?.id)
@@ -136,7 +140,12 @@ export default function RequirementPage() {
 
   const handleAddTask = () => {
     if (!newTask.title.trim()) {
-      alert("Por favor, insira um título para a task")
+      alert("Por favor, insira um nome para a sprint")
+      return
+    }
+
+    if (!newTask.description.trim()) {
+      alert("Por favor, insira o objetivo da sprint")
       return
     }
 
@@ -154,9 +163,13 @@ export default function RequirementPage() {
       priority: newTask.priority,
       ownerId: loggedUser.id,
       ...(assigneeId ? { assigneeId } : {}),
+      startDate: newTask.startDate || undefined,
       endDate: newTask.endDate || undefined,
       estimatedHours: newTask.estimatedHours ? Number(newTask.estimatedHours) : undefined,
       tags: Array.isArray(newTask.tags) ? newTask.tags : [],
+      userStory: newTask.userStory || undefined,
+      currentSprint: newTask.currentSprint || undefined,
+      sprintGoal: newTask.sprintGoal || undefined,
       status: "backlog" as const,
       reporter: loggedUser,
       comments: [],
@@ -174,9 +187,13 @@ export default function RequirementPage() {
       description: "",
       priority: "medium",
       assignee: "",
+      startDate: "",
       endDate: "",
       estimatedHours: "",
       tags: [],
+      userStory: "",
+      currentSprint: "",
+      sprintGoal: "",
     })
 
     // Close dialog
@@ -233,7 +250,7 @@ export default function RequirementPage() {
       }
       addNotification({
         type: "info",
-        title: "Task Atualizada",
+        title: "Sprint Atualizada",
         message: `\"${selectedTask.title}\" foi atualizada`,
         duration: 3000,
       });
@@ -354,7 +371,7 @@ export default function RequirementPage() {
                       <div className="flex items-center gap-2">
                         <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
                           <div className="w-2 h-2 bg-green-400 rounded-full mr-1"></div>
-                          Última concluída: {lastCompletedTask.title.length > 25 ? 
+                          Última sprint concluída: {lastCompletedTask.title.length > 25 ? 
                             `${lastCompletedTask.title.substring(0, 25)}...` : 
                             lastCompletedTask.title
                           }
@@ -365,7 +382,7 @@ export default function RequirementPage() {
                       <div className="flex items-center gap-2">
                         <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
                           <div className="w-2 h-2 bg-blue-400 rounded-full mr-1"></div>
-                          Última criada: {lastCreatedTask.title.length > 25 ? 
+                          Última sprint criada: {lastCreatedTask.title.length > 25 ? 
                             `${lastCreatedTask.title.substring(0, 25)}...` : 
                             lastCreatedTask.title
                           }
@@ -421,35 +438,46 @@ export default function RequirementPage() {
                 <DialogTrigger asChild>
                   <Button>
                     <Plus className="w-4 h-4 mr-2" />
-                    Nova Task
+                    Nova Sprint
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-w-2xl">
                   <DialogHeader>
-                    <DialogTitle>Nova Task</DialogTitle>
-                    <DialogDescription>Adicionar nova task ao requisito: {requirement.title}</DialogDescription>
+                    <DialogTitle>Nova Sprint</DialogTitle>
+                    <DialogDescription>Adicionar nova sprint ao projeto: {requirement.title}</DialogDescription>
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
                     <div className="grid gap-2">
-                      <Label htmlFor="task-title">Título</Label>
+                      <Label htmlFor="sprint-title">Nome da Sprint</Label>
                       <Input
-                        id="task-title"
+                        id="sprint-title"
                         value={newTask.title}
                         onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                        placeholder="Ex: Criar tela de login"
+                        placeholder="Ex: Sprint 5, Sprint 12 - Q4 2024, Sprint de Autenticação"
                       />
-                      <span className="text-xs text-muted-foreground">Obrigatório. Seja claro e direto.</span>
+                      <span className="text-xs text-muted-foreground">Obrigatório. Identifique a sprint de forma clara.</span>
                     </div>
                     <div className="grid gap-2">
-                      <Label htmlFor="task-description">Descrição</Label>
+                      <Label htmlFor="sprint-description">Objetivo da Sprint</Label>
                       <Textarea
-                        id="task-description"
+                        id="sprint-description"
                         value={newTask.description}
                         onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                        placeholder="Descreva a task em detalhes..."
+                        placeholder="Descreva o objetivo principal desta sprint. O que será entregue? Quais são as metas?"
+                        rows={4}
+                      />
+                      <span className="text-xs text-muted-foreground">Obrigatório. Defina claramente o que será alcançado nesta sprint.</span>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="user-story">User Story</Label>
+                      <Textarea
+                        id="user-story"
+                        value={newTask.userStory}
+                        onChange={(e) => setNewTask({ ...newTask, userStory: e.target.value })}
+                        placeholder='Ex: Como usuário, quero fazer login para acessar o sistema e ter uma experiência segura e intuitiva.'
                         rows={3}
                       />
-                      <span className="text-xs text-muted-foreground">Opcional. Inclua critérios de aceite quando possível.</span>
+                      <span className="text-xs text-muted-foreground">Opcional. Descreva a user story no formato "Como... quero... para..."</span>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="grid gap-2">
@@ -498,15 +526,27 @@ export default function RequirementPage() {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="grid gap-2">
-                        <Label htmlFor="end-date">Data de Entrega</Label>
+                        <Label htmlFor="sprint-start-date">Data de Início</Label>
                         <Input
-                          id="end-date"
+                          id="sprint-start-date"
+                          type="date"
+                          value={newTask.startDate || ""}
+                          onChange={(e) => setNewTask({ ...newTask, startDate: e.target.value })}
+                        />
+                        <span className="text-xs text-muted-foreground">Opcional. Data de início da sprint.</span>
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="sprint-end-date">Data de Término</Label>
+                        <Input
+                          id="sprint-end-date"
                           type="date"
                           value={newTask.endDate}
                           onChange={(e) => setNewTask({ ...newTask, endDate: e.target.value })}
                         />
-                        <span className="text-xs text-muted-foreground">Opcional. Ajuda a priorizar no quadro.</span>
+                        <span className="text-xs text-muted-foreground">Opcional. Data de término/entrega da sprint.</span>
                       </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
                       <div className="grid gap-2">
                         <Label htmlFor="estimated-hours">Horas Estimadas</Label>
                         <Input
@@ -514,11 +554,21 @@ export default function RequirementPage() {
                           type="number"
                           value={newTask.estimatedHours}
                           onChange={(e) => setNewTask({ ...newTask, estimatedHours: e.target.value })}
-                          placeholder="Ex: 8"
+                          placeholder="Ex: 40"
                           min={0}
                           step={0.5}
                         />
-                        <span className="text-xs text-muted-foreground">Use números inteiros ou meia hora (ex: 1.5).</span>
+                        <span className="text-xs text-muted-foreground">Opcional. Total de horas estimadas para a sprint.</span>
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="sprint-goal">Objetivo da Sprint (Resumo)</Label>
+                        <Input
+                          id="sprint-goal"
+                          value={newTask.sprintGoal}
+                          onChange={(e) => setNewTask({ ...newTask, sprintGoal: e.target.value })}
+                          placeholder="Ex: Implementar sistema de autenticação"
+                        />
+                        <span className="text-xs text-muted-foreground">Opcional. Resumo curto do objetivo (será exibido nos cards).</span>
                       </div>
                     </div>
                     <div className="grid gap-2">
@@ -552,7 +602,7 @@ export default function RequirementPage() {
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setIsTaskDialogOpen(false)}>Cancelar</Button>
-                    <Button onClick={handleAddTask} disabled={!newTask.title.trim()}>Criar Task</Button>
+                    <Button onClick={handleAddTask} disabled={!newTask.title.trim() || !newTask.description.trim()}>Criar Sprint</Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
@@ -581,7 +631,7 @@ export default function RequirementPage() {
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center gap-2 text-red-800">
               <Clock className="w-4 h-4" />
-              <span className="font-medium">Atenção: {stats.overdue} task(s) atrasada(s)</span>
+              <span className="font-medium">Atenção: {stats.overdue} sprint(s) atrasada(s)</span>
             </div>
           </div>
         )}
@@ -614,7 +664,7 @@ export default function RequirementPage() {
                   </div>
                   <div className="flex flex-col gap-2 pb-2">
                     {columnTasks.length === 0 && (
-                      <span className="text-sm text-gray-400">Nenhuma task concluída</span>
+                      <span className="text-sm text-gray-400">Nenhuma sprint concluída</span>
                     )}
                     {columnTasks.map((task) => (
                       <TaskCard
@@ -630,7 +680,7 @@ export default function RequirementPage() {
                           deleteTask(requirement.id, task.id)
                           addNotification({
                             type: "info",
-                            title: "Task Removida",
+                            title: "Sprint Removida",
                             message: `"${task.title}" foi removida`,
                             duration: 3000,
                           })
@@ -644,7 +694,7 @@ export default function RequirementPage() {
                             const newActivity = {
                               type: 'moved' as const,
                               user: loggedUser,
-                              description: `Task concluída por ${loggedUser.name}`,
+                              description: `Sprint concluída por ${loggedUser.name}`,
                               timestamp: new Date().toISOString(),
                             }
                             const newActivities = [...(task.activities || []), newActivity]

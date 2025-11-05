@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Requirement, RequirementComment, ApprovalRequest } from './entities';
 import { Task } from '../tasks/entities/task.entity';
+import { User } from '../users/entities/user.entity';
 import { RequirementsController } from './requirements.controller';
 import { RequirementsService } from './requirements.service';
 
@@ -11,7 +12,8 @@ import { RequirementsService } from './requirements.service';
       Requirement,
       RequirementComment,
       ApprovalRequest,
-      Task
+      Task,
+      User
     ])
   ],
   controllers: [RequirementsController],

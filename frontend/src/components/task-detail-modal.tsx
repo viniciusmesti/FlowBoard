@@ -105,7 +105,25 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate, onAddC
       editedTask.description !== undefined &&
       editedTask.description !== task.description
     ) {
-      addActivity('Descrição alterada.', { field: 'description', from: task.description, to: editedTask.description })
+      addActivity('Objetivo da sprint alterado.', { field: 'description', from: task.description, to: editedTask.description })
+    }
+    if (
+      editedTask.userStory !== undefined &&
+      editedTask.userStory !== task.userStory
+    ) {
+      addActivity('User Story alterada.', { field: 'userStory', from: task.userStory, to: editedTask.userStory })
+    }
+    if (
+      editedTask.currentSprint !== undefined &&
+      editedTask.currentSprint !== task.currentSprint
+    ) {
+      addActivity(`Nome da sprint alterado de "${task.currentSprint || '—'}" para "${editedTask.currentSprint || '—'}"`, { field: 'currentSprint', from: task.currentSprint, to: editedTask.currentSprint })
+    }
+    if (
+      editedTask.sprintGoal !== undefined &&
+      editedTask.sprintGoal !== task.sprintGoal
+    ) {
+      addActivity('Objetivo da sprint alterado.', { field: 'sprintGoal', from: task.sprintGoal, to: editedTask.sprintGoal })
     }
     if (
       editedTask.status !== undefined &&
@@ -294,10 +312,16 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate, onAddC
                   <span className="text-sm text-gray-700">{task.assignee.name}</span>
                 </div>
               )}
+              {task.startDate && (
+                <span className="text-xs text-gray-600 flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  Início: {new Date(task.startDate).toLocaleDateString('pt-BR')}
+                </span>
+              )}
               {task.endDate && (
                 <span className="text-xs text-gray-600 flex items-center gap-1">
                   <Calendar className="w-3 h-3" />
-                  Entrega: {new Date(task.endDate).toLocaleDateString('pt-BR')}
+                  Término: {new Date(task.endDate).toLocaleDateString('pt-BR')}
                 </span>
               )}
               {task.subtasks && task.subtasks.length > 0 && (
@@ -307,26 +331,58 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate, onAddC
                 </div>
               )}
             </div>
-            <DialogDescription className="pt-3 text-gray-600">Veja, edite ou acompanhe os detalhes, subtasks, comentários e anexos desta task.</DialogDescription>
+            <DialogDescription className="pt-3 text-gray-600">Veja, edite ou acompanhe os detalhes, subtasks, comentários e anexos desta sprint.</DialogDescription>
           </div>
         </DialogHeader>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 p-6">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Description */}
+            {/* Sprint Objective */}
             <div className="bg-white rounded-lg shadow p-6 border">
-              <h3 className="font-bold text-lg text-gray-800 mb-2 border-b pb-2">Descrição</h3>
+              <h3 className="font-bold text-lg text-gray-800 mb-2 border-b pb-2">Objetivo da Sprint</h3>
               {isEditing ? (
                 <Textarea
                   value={editedTask.description ?? task.description}
                   onChange={(e) => setEditedTask({ ...editedTask, description: e.target.value })}
+                  placeholder="Descreva o objetivo principal desta sprint. O que será entregue? Quais são as metas?"
                   rows={4}
                 />
               ) : (
-                <p className="text-gray-700">{task.description}</p>
+                <p className="text-gray-700">{task.description || "—"}</p>
               )}
             </div>
+
+            {/* User Story */}
+            <div className="bg-white rounded-lg shadow p-6 border">
+              <h3 className="font-bold text-lg text-gray-800 mb-2 border-b pb-2">User Story</h3>
+              {isEditing ? (
+                <Textarea
+                  value={editedTask.userStory ?? task.userStory ?? ""}
+                  onChange={(e) => setEditedTask({ ...editedTask, userStory: e.target.value })}
+                  placeholder='Ex: Como usuário, quero fazer login para acessar o sistema...'
+                  rows={3}
+                />
+              ) : (
+                <p className="text-gray-700">{task.userStory || "—"}</p>
+              )}
+            </div>
+
+            {/* Sprint Goal Summary */}
+            {task.sprintGoal && (
+              <div className="bg-white rounded-lg shadow p-6 border">
+                <h3 className="font-bold text-lg text-gray-800 mb-2 border-b pb-2">Objetivo (Resumo)</h3>
+                {isEditing ? (
+                  <Input
+                    value={editedTask.sprintGoal ?? task.sprintGoal ?? ""}
+                    onChange={(e) => setEditedTask({ ...editedTask, sprintGoal: e.target.value })}
+                    placeholder="Ex: Implementar sistema de autenticação"
+                  />
+                ) : (
+                  <p className="text-gray-700">{task.sprintGoal}</p>
+                )}
+              </div>
+            )}
 
             {/* Subtasks */}
             <div className="bg-white rounded-lg shadow p-6 border">

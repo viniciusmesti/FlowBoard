@@ -285,3 +285,4 @@ Para dúvidas ou problemas:
 - `frontend/src/components/requirement-detail-modal.tsx`
 
 
+

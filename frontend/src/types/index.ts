@@ -39,10 +39,13 @@ export interface User {
     priority: "low" | "medium" | "high" | "urgent"
     assignee?: User
     reporter: User
-    startDate?: string  // Adicione esta linha
-    endDate?: string    // Adicione esta linha
+    startDate?: string
+    endDate?: string
     estimatedHours?: number
     actualHours?: number
+    userStory?: string // User Story da task (ex: "Como usuário, quero...")
+    currentSprint?: string // Sprint atual em que a task está sendo trabalhada
+    sprintGoal?: string // Objetivo da sprint (pode ser igual à descrição)
     tags: string[]
     comments: Comment[]
     attachments: Attachment[]

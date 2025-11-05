@@ -23,8 +23,7 @@ import {
     priority?: 'low' | 'medium' | 'high';
   
     @IsUUID()
-    @IsOptional()
-    ownerId?: string;
+    ownerId: string;
   
     @IsDateString()
     @IsOptional()

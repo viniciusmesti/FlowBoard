@@ -49,3 +49,4 @@ NODE_ENV=production
 
 Write-Host "`n=== Script Concluído ===" -ForegroundColor Cyan
 
+
