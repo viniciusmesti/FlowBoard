@@ -10,6 +10,7 @@ import { MilestonesModule } from './milestones/milestones.module';
 import { CommentsModule } from './comments/comments.module';
 import { TemplatesModule } from './templates/templates.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { SystemsModule } from './systems/systems.module';
 import { User } from './users/entities/user.entity';
 import { Task } from './tasks/entities/task.entity';
 import { SubTask } from './tasks/entities/subtask.entity';
@@ -21,6 +22,7 @@ import { Milestone } from './milestones/entities/milestone.entity';
 import { RequirementComment }    from './requirements/entities/requirement-comment.entity';
 import { ApprovalRequest }       from './requirements/entities/approval-request.entity';
 import { Template } from './templates/entities/template.entity';
+import { System } from './systems/entities/system.entity';
 
 // Helper function to get database configuration with fallback
 function getDatabaseConfig() {
@@ -74,6 +76,7 @@ function getDatabaseConfig() {
         RequirementComment, 
         ApprovalRequest,
         Template,
+        System,
       ],
       // TEMPORARIAMENTE habilitado para criar tabelas em produção
       synchronize: true, // process.env.NODE_ENV !== 'production',
@@ -95,6 +98,7 @@ function getDatabaseConfig() {
     CommentsModule,
     TemplatesModule,
     NotificationsModule,
+    SystemsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

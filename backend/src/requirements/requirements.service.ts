@@ -59,6 +59,8 @@ export class RequirementsService {
         tags: dto.tags || [],
         approvalRequired: dto.approvalRequired ?? false,
         progress: 0, // Garantir que progress sempre tenha valor
+        systemId: dto.systemId,
+        requirementType: dto.requirementType,
       });
 
       console.log('💾 Salvando requisito no banco...');
@@ -70,6 +72,7 @@ export class RequirementsService {
         where: { id: saved.id },
         relations: [
           'owner',
+          'system',
           'tasks',
           'tasks.subtasks',
           'tasks.comments',
@@ -111,6 +114,7 @@ export class RequirementsService {
     return this.repo.find({
       relations: [
         'owner',
+        'system',
         'tasks',
         'tasks.subtasks',
         'tasks.comments',
@@ -130,6 +134,7 @@ export class RequirementsService {
       where: { id }, 
       relations: [
         'owner',
+        'system',
         'tasks',
         'tasks.subtasks',
         'tasks.comments',
@@ -147,6 +152,7 @@ export class RequirementsService {
   }
 
   async update(id: string, dto: UpdateRequirementDto): Promise<Requirement> {
+    console.log('🔄 [RequirementsService] Atualizando requisito:', id, dto);
     const req = await this.findOne(id);
     const patch: any = { ...dto };
     if (dto.startDate) patch.startDate = normalizeDateOnly(dto.startDate);
@@ -156,7 +162,28 @@ export class RequirementsService {
     if ((dto as any).ownerId) {
       req.owner = { id: (dto as any).ownerId } as User;
     }
-    return this.repo.save(req);
+    console.log('💾 [RequirementsService] Salvando requisito com status:', req.status);
+    const saved = await this.repo.save(req);
+    console.log('✅ [RequirementsService] Requisito salvo com sucesso:', saved.id, saved.status);
+    
+    // Buscar novamente com todas as relações
+    return this.repo.findOneOrFail({
+      where: { id: saved.id },
+      relations: [
+        'owner',
+        'system',
+        'tasks',
+        'tasks.subtasks',
+        'tasks.comments',
+        'tasks.comments.author',
+        'tasks.attachments',
+        'tasks.activities',
+        'tasks.assignee',
+        'comments',
+        'comments.author',
+        'approvalRequests'
+      ]
+    });
   }
 
   async remove(id: string): Promise<void> {

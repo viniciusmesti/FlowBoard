@@ -66,5 +66,13 @@ import {
   @IsString()
   @IsOptional()
   lastCompletedSprint?: string;
+
+  @IsUUID()
+  @IsOptional()
+  systemId?: string;
+
+  @IsString()
+  @IsOptional()
+  requirementType?: string;
 }
   

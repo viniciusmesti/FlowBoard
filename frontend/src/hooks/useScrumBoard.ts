@@ -233,6 +233,8 @@ export function useScrumBoard() {
           category: requirement.category,
           tags: requirement.tags || [],
           approvalRequired: requirement.approvalRequired || false,
+          systemId: requirement.systemId,
+          requirementType: requirement.requirementType,
         }
         console.log('📤 [DEBUG] Enviando para backend:', backendData)
         
@@ -296,6 +298,8 @@ export function useScrumBoard() {
         if (updates.category !== undefined) backendData.category = updates.category
         if (updates.tags !== undefined) backendData.tags = updates.tags
         if (updates.approvalRequired !== undefined) backendData.approvalRequired = updates.approvalRequired
+        if (updates.systemId !== undefined) backendData.systemId = updates.systemId
+        if (updates.requirementType !== undefined) backendData.requirementType = updates.requirementType
         
         console.log('📤 [DEBUG] Enviando PATCH para backend:', backendData)
         
@@ -315,23 +319,24 @@ export function useScrumBoard() {
         setRawRequirements((prev) => prev.map((req) => req.id === id ? updated : req))
         // Refetch automático após atualizar (com debounce)
         debouncedRefetch()
+        return updated
       } catch (err) {
         console.error('❌ [DEBUG] Falha ao atualizar requisito, usando fallback local:', err)
         // Fallback local
+        const updatedLocal = {
+          ...requirements.find((r) => r.id === id),
+          ...updates,
+          updatedAt: new Date().toISOString(),
+        } as Requirement
         setRawRequirements((prev) =>
           prev.map((req) =>
-            req.id === id
-              ? {
-                  ...req,
-                  ...updates,
-                  updatedAt: new Date().toISOString(),
-                }
-              : req,
+            req.id === id ? updatedLocal : req
           ),
         )
+        return updatedLocal
       }
     },
-    [setRawRequirements, debouncedRefetch],
+    [setRawRequirements, debouncedRefetch, requirements],
   )
 
   const deleteRequirement = useCallback(

@@ -5,6 +5,7 @@ import "./globals.css"
 import { AuthProvider } from "@/contexts/AuthContext"
 import { NotificationProvider } from "@/contexts/NotificationContext"
 import { ScrumBoardProvider } from "@/contexts/ScrumBoardContext"
+import { SystemProvider } from "@/contexts/SystemContext"
 import { ToastContainer } from "@/components/toast-container"
 import { UserMenu } from "@/components/user-menu"
 
@@ -24,16 +25,18 @@ export default function RootLayout({
     <html lang="pt-BR">
       <body className={inter.className}>
       <AuthProvider>
-        <ScrumBoardProvider>
-            <NotificationProvider>
-              <div className="w-full flex items-center justify-between px-6 py-3 border-b bg-white sticky top-0 z-50">
-                <span className="font-bold text-lg text-blue-700">FlowBoard</span>
-                <UserMenu />
-              </div>
-              {children}
-              <ToastContainer />
-            </NotificationProvider>
-        </ScrumBoardProvider>
+        <SystemProvider>
+          <ScrumBoardProvider>
+              <NotificationProvider>
+                <div className="w-full flex items-center justify-between px-6 py-3 border-b bg-white sticky top-0 z-50">
+                  <span className="font-bold text-lg text-blue-700">FlowBoard</span>
+                  <UserMenu />
+                </div>
+                {children}
+                <ToastContainer />
+              </NotificationProvider>
+          </ScrumBoardProvider>
+        </SystemProvider>
       </AuthProvider>
       </body>
     </html>

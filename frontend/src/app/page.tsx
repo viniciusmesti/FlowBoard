@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import {
   Plus,
   Search,
@@ -17,6 +18,7 @@ import {
   Edit,
 } from "lucide-react"
 import { AuthGuard } from "@/components/auth-guard"
+import { useSystem } from "@/contexts/SystemContext"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -70,6 +72,8 @@ const colors = [
 ]
 
 export default function Dashboard() {
+  const router = useRouter()
+  const { systems, isLoading: systemsLoading } = useSystem()
   const {
     requirements,
     users,
@@ -81,6 +85,16 @@ export default function Dashboard() {
     deleteRequirement,
   } = useScrumBoardContext()
   const { user: loggedUser } = useAuth()
+
+  // Redirecionar para /systems se não houver sistemas ou se ainda estiver carregando
+  useEffect(() => {
+    if (!systemsLoading && systems.length === 0) {
+      router.push("/systems")
+    } else if (!systemsLoading && systems.length > 0) {
+      // Se houver sistemas, redirecionar para o primeiro
+      router.push(`/dashboard/${systems[0].id}`)
+    }
+  }, [systemsLoading, systems, router])
 
   const [isRequirementDialogOpen, setIsRequirementDialogOpen] = useState(false)
   const [newRequirement, setNewRequirement] = useState({
@@ -466,6 +480,19 @@ export default function Dashboard() {
           </div>
         </CardContent>
       </Card>
+    )
+  }
+
+  // Mostrar loading enquanto redireciona
+  if (systemsLoading || systems.length === 0) {
+    return (
+      <AuthGuard>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-gray-600">Carregando...</p>
+          </div>
+        </div>
+      </AuthGuard>
     )
   }
 

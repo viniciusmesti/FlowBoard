@@ -3,6 +3,7 @@ import { User } from '../../users/entities/user.entity';
 import { Task } from '../../tasks/entities';
 import { Milestone } from '../../milestones/entities';
 import { RequirementComment, ApprovalRequest } from '.';
+import { System } from '../../systems/entities/system.entity';
 
 @Entity('requirements')
 export class Requirement {
@@ -80,6 +81,16 @@ export class Requirement {
 
   @Column({ nullable: true })
   lastCompletedSprint?: string; // Último sprint em que o requisito foi concluído
+
+  @ManyToOne(() => System, system => system.requirements, { onDelete: 'CASCADE', nullable: true })
+  @JoinColumn({ name: 'systemId' })
+  system?: System;
+
+  @Column({ nullable: true })
+  systemId?: string;
+
+  @Column({ nullable: true })
+  requirementType?: string; // Tipo dentro do sistema (CURIA, MITRA, etc.)
 
   @CreateDateColumn()
   createdAt: Date;

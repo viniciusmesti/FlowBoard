@@ -5,6 +5,18 @@ export interface User {
     avatar?: string
     role: "admin" | "developer" | "designer" | "tester"
   }
+
+export interface System {
+  id: string
+  name: string
+  description?: string
+  color: string
+  owner: User
+  requirementTypes: string[]
+  requirements?: Requirement[]
+  createdAt: string
+  updatedAt: string
+}
   
   export interface Comment {
     id: string
@@ -85,6 +97,9 @@ export interface Requirement {
   approvalRequired: boolean
   currentSprint?: string // Sprint atual em que o requisito está sendo trabalhado
   lastCompletedSprint?: string // Último sprint em que o requisito foi concluído
+  systemId?: string
+  system?: System
+  requirementType?: string
   createdAt: string
   updatedAt: string
 }
