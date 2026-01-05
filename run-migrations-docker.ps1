@@ -1,10 +1,16 @@
 # Executar migrations via Docker
 Write-Host "=== Executando Migrations via Docker ===" -ForegroundColor Cyan
 
-Write-Host "`nUsando Docker para conectar no banco PostgreSQL do Render..." -ForegroundColor Yellow
+Write-Host "`nUsando Docker para conectar no banco PostgreSQL..." -ForegroundColor Yellow
 
-# URL do banco
-$DATABASE_URL = "postgresql://flowboard_ftay_user:LKERD3cqLZOnTNorfdex2hLkKaKiRVt3@dpg-d3igg4pr0fns73csoke0-a.oregon-postgres.render.com/flowboard_ftay"
+# URL do banco - ATUALIZE COM SUA DATABASE_URL
+# Exemplo Supabase: postgresql://user:pass@host.supabase.com:port/database
+$DATABASE_URL = $env:DATABASE_URL
+if (-not $DATABASE_URL) {
+    Write-Host "❌ DATABASE_URL não configurada!" -ForegroundColor Red
+    Write-Host "Configure a variável de ambiente DATABASE_URL ou edite este script." -ForegroundColor Yellow
+    exit 1
+}
 
 try {
     # Verificar se Docker está rodando
@@ -35,7 +41,7 @@ NODE_ENV=production
     
     if ($LASTEXITCODE -eq 0) {
         Write-Host "`n✅ Migrations executadas com sucesso!" -ForegroundColor Green
-        Write-Host "Tabelas criadas no banco PostgreSQL do Render!" -ForegroundColor Green
+        Write-Host "Tabelas criadas no banco PostgreSQL!" -ForegroundColor Green
     } else {
         Write-Host "`n❌ Erro ao executar migrations" -ForegroundColor Red
     }

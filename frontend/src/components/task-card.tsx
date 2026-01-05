@@ -270,7 +270,7 @@ export function TaskCard({
           <h4 className={`font-medium text-sm mb-2 ${task.status === "done" ? "line-through" : ""}`}>{task.title}</h4>
 
           {/* Description */}
-          <p className="text-xs text-gray-600 mb-3 line-clamp-2">{task.description}</p>
+          <p className="text-xs text-gray-600 mb-3 line-clamp-2 whitespace-pre-wrap">{task.description}</p>
 
           {/* Tags */}
           {tags.length > 0 && (

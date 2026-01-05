@@ -22,19 +22,46 @@ import { RequirementComment }    from './requirements/entities/requirement-comme
 import { ApprovalRequest }       from './requirements/entities/approval-request.entity';
 import { Template } from './templates/entities/template.entity';
 
+// Helper function to get database configuration with fallback
+function getDatabaseConfig() {
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  if (process.env.DATABASE_URL) {
+    // Parse DATABASE_URL to check if it's Internal or External
+    const dbUrl = process.env.DATABASE_URL;
+    const urlMatch = dbUrl.match(/^postgresql:\/\/([^:]+):([^@]+)@([^\/]+)\/(.+)$/);
+    
+    if (urlMatch) {
+      const [, username, password, host, database] = urlMatch;
+      
+      // Supabase requer SSL. Para Supabase, usar rejectUnauthorized: false funciona
+      const isSupabase = host.includes('supabase.com');
+      return {
+        type: 'postgres' as const,
+        url: dbUrl,
+        ssl: isProduction || isSupabase || dbUrl.includes('supabase.com') 
+          ? { rejectUnauthorized: false } 
+          : false,
+      };
+    }
+  }
+  
+  // Fallback to individual environment variables
+  return {
+    type: 'postgres' as const,
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '5432'),
+    username: process.env.DB_USERNAME || 'postgres',
+    password: process.env.DB_PASSWORD || 'postgres',
+    database: process.env.DB_DATABASE || 'flowboard',
+    ssl: isProduction ? { rejectUnauthorized: false } : false,
+  };
+}
+
 @Module({
   imports: [
     TypeOrmModule.forRoot({
-      type: 'postgres',
-      ...(process.env.DATABASE_URL ? {
-        url: process.env.DATABASE_URL,
-      } : {
-        host: process.env.DB_HOST || 'localhost',
-        port: parseInt(process.env.DB_PORT || '5432'),
-        username: process.env.DB_USERNAME || 'postgres',
-        password: process.env.DB_PASSWORD || 'postgres',
-        database: process.env.DB_DATABASE || 'flowboard',
-      }),
+      ...getDatabaseConfig(),
       entities: [
         User, 
         Task, 
@@ -51,10 +78,14 @@ import { Template } from './templates/entities/template.entity';
       // TEMPORARIAMENTE habilitado para criar tabelas em produção
       synchronize: true, // process.env.NODE_ENV !== 'production',
       dropSchema: false,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
       logging: process.env.NODE_ENV === 'development',
-      retryAttempts: 3,
+      retryAttempts: 5,
       retryDelay: 3000,
+      // Better error handling
+      extra: {
+        connectTimeoutMS: 10000,
+        statement_timeout: 30000,
+      },
     }),
     AuthModule,
     UsersModule,

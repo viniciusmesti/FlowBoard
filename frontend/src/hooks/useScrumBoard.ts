@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useMemo, useEffect } from "react"
+import { useState, useCallback, useMemo, useEffect, useRef } from "react"
 import type { Requirement, Task, User, RequirementTemplate, ProjectStats, Comment, SubTask } from "@/types"
 import { useLocalStorage } from "./useLocalStorage"
 
@@ -120,28 +120,97 @@ export function useScrumBoard() {
   const [loading, setLoading] = useState(true)
   const [apiError, setApiError] = useState<string | null>(null)
 
-  // Buscar requisitos do backend ao carregar
-  useEffect(() => {
-    async function fetchRequirements() {
+  // Função para buscar requisitos do backend (pode ser chamada após mutações)
+  const fetchRequirements = useCallback(async (silent = false, retries = 0) => {
+    // Evitar múltiplos fetches simultâneos
+    if (isFetchingRef.current && !silent) {
+      console.log('⏸️ [DEBUG] Fetch já em andamento, ignorando...')
+      return
+    }
+    
+    const maxRetries = 3
+    if (!silent) {
       setLoading(true)
-      setApiError(null)
-      console.log('🔍 [DEBUG] Buscando requisitos do backend:', API_URL)
-      try {
-        const res = await fetch(`${API_URL}/requirements`)
+      isFetchingRef.current = true
+    }
+    setApiError(null)
+    
+    // Reduzir logging em produção/silent mode
+    if (!silent || retries === 0) {
+      console.log('🔍 [DEBUG] Buscando requisitos do backend:', API_URL, retries > 0 ? `(tentativa ${retries + 1}/${maxRetries + 1})` : '')
+    }
+    
+    try {
+      const res = await fetch(`${API_URL}/requirements`, {
+        signal: AbortSignal.timeout(10000), // 10s timeout
+      })
+      
+      if (!silent || retries === 0) {
         console.log('📡 [DEBUG] Resposta do backend:', res.status, res.statusText)
-        if (!res.ok) throw new Error("Erro ao buscar requisitos do backend")
-        const data = await res.json()
+      }
+      
+      if (!res.ok) {
+        const errorText = await res.text()
+        throw new Error(`Erro ao buscar requisitos: ${res.status} ${res.statusText}. ${errorText}`)
+      }
+      const data = await res.json()
+      
+      if (!silent || retries === 0) {
         console.log('📊 [DEBUG] Dados recebidos:', data)
-        setRawRequirements(data)
-      } catch (err: any) {
-        console.error('❌ [DEBUG] Erro ao buscar requisitos:', err)
-        setApiError("Erro ao buscar requisitos do backend. Usando dados locais.")
-      } finally {
+      }
+      
+      setRawRequirements(data)
+      setApiError(null) // Clear any previous errors
+    } catch (err: any) {
+      console.error('❌ [DEBUG] Erro ao buscar requisitos:', err)
+      
+      // Retry logic for network errors
+      if (retries < maxRetries && (err.name === 'TypeError' || err.name === 'AbortError' || err.message?.includes('fetch'))) {
+        if (!silent) {
+          console.log(`🔄 [DEBUG] Tentando novamente em ${(retries + 1) * 1000}ms...`)
+        }
+        await new Promise(resolve => setTimeout(resolve, (retries + 1) * 1000))
+        return fetchRequirements(silent, retries + 1)
+      }
+      
+      const errorMessage = err.message || "Erro ao buscar requisitos do backend"
+      setApiError(`Erro ao buscar requisitos: ${errorMessage}. Usando dados locais.`)
+    } finally {
+      if (!silent) {
         setLoading(false)
       }
+      isFetchingRef.current = false
     }
-    fetchRequirements()
-  }, [])
+  }, [setRawRequirements])
+
+  // Flag para evitar múltiplos fetches simultâneos
+  const isFetchingRef = useRef(false)
+  
+  // Debounce para refetch (evita múltiplos refetches simultâneos)
+  const refetchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const debouncedRefetch = useCallback(() => {
+    if (refetchTimeoutRef.current) {
+      clearTimeout(refetchTimeoutRef.current)
+    }
+    refetchTimeoutRef.current = setTimeout(() => {
+      if (!isFetchingRef.current) {
+        isFetchingRef.current = true
+        fetchRequirements(true).finally(() => {
+          isFetchingRef.current = false
+        })
+      }
+    }, 500) // 500ms de debounce
+  }, [fetchRequirements])
+
+  // Buscar requisitos do backend ao carregar (apenas uma vez)
+  const hasInitialFetchRef = useRef(false)
+  useEffect(() => {
+    if (!hasInitialFetchRef.current) {
+      hasInitialFetchRef.current = true
+      fetchRequirements(false)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Executar apenas uma vez na montagem
 
   // Funções para sincronizar com o backend
   const addRequirement = useCallback(
@@ -181,6 +250,8 @@ export function useScrumBoard() {
         const newRequirement = await res.json()
         console.log('✅ [DEBUG] Requisito criado no backend:', newRequirement)
         setRawRequirements((prev) => [...prev, newRequirement])
+        // Refetch automático após criar (com debounce)
+        debouncedRefetch()
         return newRequirement
       } catch (err) {
         console.error('❌ [DEBUG] Falha ao criar requisito, usando fallback local:', err)
@@ -202,7 +273,7 @@ export function useScrumBoard() {
         return newRequirement
       }
     },
-    [setRawRequirements],
+    [setRawRequirements, debouncedRefetch],
   )
 
   const updateRequirement = useCallback(
@@ -242,6 +313,8 @@ export function useScrumBoard() {
         const updated = await res.json()
         console.log('✅ [DEBUG] Requisito atualizado no backend:', updated)
         setRawRequirements((prev) => prev.map((req) => req.id === id ? updated : req))
+        // Refetch automático após atualizar (com debounce)
+        debouncedRefetch()
       } catch (err) {
         console.error('❌ [DEBUG] Falha ao atualizar requisito, usando fallback local:', err)
         // Fallback local
@@ -258,7 +331,7 @@ export function useScrumBoard() {
         )
       }
     },
-    [setRawRequirements],
+    [setRawRequirements, debouncedRefetch],
   )
 
   const deleteRequirement = useCallback(
@@ -267,12 +340,14 @@ export function useScrumBoard() {
         const res = await fetch(`${API_URL}/requirements/${id}`, { method: "DELETE" })
         if (!res.ok) throw new Error("Erro ao deletar requisito no backend")
         setRawRequirements((prev) => prev.filter((req) => req.id !== id))
+        // Refetch automático após deletar (com debounce)
+        debouncedRefetch()
       } catch (err) {
         // Fallback local
         setRawRequirements((prev) => prev.filter((req) => req.id !== id))
       }
     },
-    [setRawRequirements],
+    [setRawRequirements, debouncedRefetch],
   )
 
   // Para tasks, idealmente o backend teria endpoints /tasks ou /requirements/:id/tasks
@@ -301,6 +376,8 @@ export function useScrumBoard() {
               : req,
           ),
         )
+        // Refetch automático após criar task (com debounce)
+        debouncedRefetch()
         return newTask
       } catch (err) {
         console.error('❌ [DEBUG] Falha ao criar task, usando fallback local:', err)
@@ -328,7 +405,7 @@ export function useScrumBoard() {
         return newTask
       }
     },
-    [setRawRequirements],
+    [setRawRequirements, debouncedRefetch],
   )
 
   const updateTask = useCallback(
@@ -353,6 +430,8 @@ export function useScrumBoard() {
               : req,
           ),
         );
+        // Refetch automático após atualizar task (com debounce)
+        debouncedRefetch()
         return updatedTask;
       } catch (err) {
         // Fallback local
@@ -387,7 +466,7 @@ export function useScrumBoard() {
         return updatedTask;
       }
     },
-    [setRawRequirements],
+    [setRawRequirements, debouncedRefetch],
   );
 
   const deleteTask = useCallback(
@@ -402,6 +481,8 @@ export function useScrumBoard() {
               : req,
           ),
         );
+        // Refetch automático após deletar task (com debounce)
+        debouncedRefetch()
       } catch (err) {
         // Fallback local
         setRawRequirements((prev) =>
@@ -413,7 +494,7 @@ export function useScrumBoard() {
         );
       }
     },
-    [setRawRequirements],
+    [setRawRequirements, debouncedRefetch],
   );
 
   const moveTask = useCallback(

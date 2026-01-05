@@ -24,13 +24,15 @@ Sistema completo de gerenciamento de projetos com backend NestJS e frontend Next
 
 4. **Configurar variáveis de ambiente**
    - `NODE_ENV`: `production`
-   - `DATABASE_URL`: Sua URL do PostgreSQL (pode usar o Render PostgreSQL)
+   - `DATABASE_URL`: URL do PostgreSQL (Supabase recomendado)
    - `JWT_SECRET`: Uma chave secreta forte para JWT
+   - `FRONTEND_URL`: URL do frontend (ex: `https://flow-board-peach.vercel.app`)
    - `SEED_SAMPLE_DATA`: `false`
 
-5. **Criar banco PostgreSQL (opcional)**
-   - No Render, vá em "New +" → "PostgreSQL"
-   - Configure e copie a URL para `DATABASE_URL`
+5. **Configurar banco de dados**
+   - **Recomendado**: Use Supabase (gratuito e fácil)
+   - Veja `SUPABASE-MIGRATION.md` para instruções detalhadas
+   - Ou use PostgreSQL do Render se preferir
 
 6. **Deploy**
    - Clique em "Create Web Service"
@@ -112,7 +114,7 @@ NEXT_PUBLIC_API_URL=https://flowboard-backend.onrender.com
 
 ## 📝 Notas Importantes
 
-1. **Banco de dados**: Use PostgreSQL em produção (Render oferece gratuitamente)
+1. **Banco de dados**: Use PostgreSQL em produção (Supabase recomendado - veja `SUPABASE-MIGRATION.md`)
 2. **JWT Secret**: Use uma chave forte e única em produção
 3. **CORS**: O backend já está configurado para aceitar requisições do frontend
 4. **Uploads**: Os arquivos são salvos localmente no backend (considere usar S3 para produção)

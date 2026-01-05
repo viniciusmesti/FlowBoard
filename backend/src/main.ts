@@ -5,6 +5,24 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 
 async function bootstrap() {
+  // Log database configuration (without sensitive data)
+  if (process.env.DATABASE_URL) {
+    const dbUrl = process.env.DATABASE_URL;
+    const urlMatch = dbUrl.match(/^postgresql:\/\/([^:]+):([^@]+)@([^\/]+)\/(.+)$/);
+    if (urlMatch) {
+      const [, username, , host, database] = urlMatch;
+      console.log('📊 Database Config:', {
+        host: host,
+        database: database,
+        username: username,
+        isInternal: !host.includes('.'),
+        hasSSL: process.env.NODE_ENV === 'production'
+      });
+    }
+  } else {
+    console.log('📊 Database Config: Using individual environment variables');
+  }
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   // Configuração CORS mais robusta
@@ -68,4 +86,14 @@ async function bootstrap() {
   console.log(`🚀 Backend rodando na porta ${port}`);
   console.log(`🌐 CORS habilitado para: ${corsOrigins.join(', ')}`);
 }
-bootstrap();
+
+bootstrap().catch((error) => {
+  console.error('❌ Erro fatal ao iniciar aplicação:', error);
+  if (error.code === 'ENOTFOUND') {
+    console.error('🔴 Erro de DNS: Não foi possível resolver o hostname do banco de dados.');
+    console.error('💡 Verifique se a DATABASE_URL está correta.');
+    console.error('💡 Para Supabase: postgresql://user:pass@host.supabase.com:port/database');
+    console.error('💡 Para Render: use a Internal Database URL (sem domínio completo).');
+  }
+  process.exit(1);
+});

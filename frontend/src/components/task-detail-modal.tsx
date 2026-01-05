@@ -349,7 +349,7 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate, onAddC
                   rows={4}
                 />
               ) : (
-                <p className="text-gray-700">{task.description || "—"}</p>
+                <p className="text-gray-700 whitespace-pre-wrap">{task.description || "—"}</p>
               )}
             </div>
 
@@ -364,7 +364,7 @@ export function TaskDetailModal({ task, users, isOpen, onClose, onUpdate, onAddC
                   rows={3}
                 />
               ) : (
-                <p className="text-gray-700">{task.userStory || "—"}</p>
+                <p className="text-gray-700 whitespace-pre-wrap">{task.userStory || "—"}</p>
               )}
             </div>
 
